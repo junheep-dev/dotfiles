@@ -1,0 +1,31 @@
+[user]
+	name = Junhee Park
+	email = 12604726+junheep-dev@users.noreply.github.com
+	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICxO+KX7guvfvwH0x29vtCwNHNsgNINDgFZHd/m9Yw2o
+[gpg]
+	format = ssh
+[gpg "ssh"]
+	program = /Applications/1Password.app/Contents/MacOS/op-ssh-sign
+[commit]
+	gpgsign = true
+[alias]
+  lg = log --color --graph --pretty=format:'%C(auto)%h%Creset -%C(auto)%d%Creset %s %Cgreen(%cr)%Creset %C(blue)<%an>%Creset' --abbrev-commit
+[rerere]
+	enabled = true
+[rebase]
+	autosquash = true
+	autostash = true
+[pull]
+	rebase = true
+[diff]
+  tool = vscode
+[difftool "vscode"]
+  cmd = code --wait --diff $LOCAL $REMOTE
+[merge]
+  tool = vscode
+[mergetool "vscode"]
+  cmd = code --wait $MERGED
+[init]
+	defaultBranch = main
+[core]
+	editor = nvim

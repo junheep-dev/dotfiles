@@ -1,0 +1,21 @@
+font-family = "CaskaydiaMono Nerd Font"
+font-family = "D2Coding"
+font-size = 14
+adjust-cell-height = 5%
+
+macos-titlebar-style = hidden
+window-width = 172
+window-height = 56
+window-padding-x = 8,0
+window-padding-y = 8,0
+
+background-opacity = 0.9
+background-blur = true
+
+shell-integration-features = no-cursor
+
+macos-option-as-alt = true
+confirm-close-surface = false
+
+config-file = ./theme
+keybind = shift+enter=text:\x1b\r

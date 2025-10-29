@@ -1,0 +1,6 @@
+.DS_Store
+
+nvim/lua/plugins/theme.lua
+nvim/lua/plugins/local.lua
+
+karabiner/automatic_backups
