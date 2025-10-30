@@ -1,4 +1,5 @@
 {
+    "global": { "show_in_menu_bar": false },
     "profiles": [
         {
             "complex_modifications": {
@@ -75,10 +76,16 @@
                                         "type": "frontmost_application_if"
                                     }
                                 ],
-                                "from": { "key_code": "q", "modifiers": { "mandatory": ["left_control"] } },
+                                "from": {
+                                    "key_code": "q",
+                                    "modifiers": { "mandatory": ["left_control"] }
+                                },
                                 "to": [
                                     { "select_input_source": { "language": "en" } },
-                                    { "key_code": "q", "modifiers": ["left_control"] }
+                                    {
+                                        "key_code": "q",
+                                        "modifiers": ["left_control"]
+                                    }
                                 ],
                                 "type": "basic"
                             }
