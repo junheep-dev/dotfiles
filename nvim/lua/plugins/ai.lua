@@ -14,6 +14,14 @@ return {
     config = function(_, opts)
       require("sidekick").setup(opts)
 
+      -- Disable sidekick NES for markdown files
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = { "markdown" },
+        callback = function()
+          vim.b.sidekick_nes = false
+        end,
+      })
+
       vim.api.nvim_create_autocmd({ "BufWinEnter" }, {
         callback = function()
           -- Only equalize windows when opening or reopening a sidekick CLI terminal
