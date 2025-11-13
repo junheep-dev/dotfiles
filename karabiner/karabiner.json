@@ -92,7 +92,7 @@
                         ]
                     },
                     {
-                        "description": " Left command tap to ctrl-alt-b(tmux prefix)",
+                        "description": "Left command tap to ctrl-alt-b(tmux prefix)",
                         "manipulators": [
                             {
                                 "from": {
