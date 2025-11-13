@@ -10,9 +10,12 @@ mkdir -p $HOME/.config
 rm -rf $HOME/.config/nvim
 ln -sf "$DOTFILES_DIR/nvim" "$HOME/.config/nvim"
 
-print_step "Install dependencies for fzf-lua"
+print_step "Install fzf, ripgrep, fd for fzf-lua"
 brew install fzf
 brew install ripgrep
 brew install fd
+
+print_step "Install imagemagick for snacks.nvim image"
+brew install imagemagick
 
 print_success "Neovim setup complete"
