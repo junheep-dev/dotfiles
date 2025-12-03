@@ -6,7 +6,7 @@ TYPORA_THEMES_DIR="$HOME/Library/Application Support/abnerworks.Typora/themes"
 
 # Check if Typora is installed
 if [ ! -d "$TYPORA_THEMES_DIR" ]; then
-  print_error "Typora is not installed. Please install Typora first."
+  print_error "Typora is not installed or has never been launched. Please install and run Typora first."
   exit 1
 fi
 
