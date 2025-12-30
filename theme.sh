@@ -30,6 +30,8 @@ if [ -n "$THEME" ] && [ "$THEME" != "<<-quit" ]; then
 
   if pgrep -x ghostty >/dev/null; then
     killall -SIGUSR1 ghostty
+    touch /tmp/.restore-tmux-attachment # Flag for zsh/.zshrc
+    sleep 0.5
     open -a Ghostty
   fi
 fi

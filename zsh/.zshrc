@@ -50,3 +50,10 @@ autoload -Uz compinit && compinit
 
 # Add ~/.local/bin to PATH
 export PATH="$HOME/.local/bin:$PATH"
+
+# Restore tmux attachment after theme reload
+if [[ -f /tmp/.restore-tmux-attachment ]]; then
+  rm /tmp/.restore-tmux-attachment
+  echo "Restoring tmux attachment..."
+  tmux attach
+fi
