@@ -39,4 +39,14 @@ return {
     -- For hugo template
     opts = { ensure_installed = { "gotmpl" } },
   },
+
+  {
+    "nvim-lualine/lualine.nvim",
+    opts = {
+      sections = {
+        -- Disable default time display
+        lualine_z = {},
+      },
+    },
+  },
 }
