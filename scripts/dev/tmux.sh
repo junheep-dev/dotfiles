@@ -8,7 +8,8 @@ brew install tmux
 print_step "Create configuration symlinks"
 ln -sf "$DOTFILES_DIR/tmux/.tmux.conf" "$HOME/.tmux.conf"
 mkdir -p "$HOME/.tmux"
-ln -sf "$DOTFILES_DIR/tmux/.tmux.theme.conf" "$HOME/.tmux/.tmux.theme.conf"
+ln -sf "$DOTFILES_DIR/tmux/tmux.theme.conf" "$HOME/.tmux/tmux.theme.conf"
+ln -sf "$DOTFILES_DIR/tmux/tmux.statusbar.conf" "$HOME/.tmux/tmux.statusbar.conf"
 
 print_step "Install Tmux Plugin Manager"
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm

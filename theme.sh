@@ -19,10 +19,10 @@ THEME=$(gum choose "${THEME_NAMES[@]}" "<< Quit" --header "Choose your theme" --
 if [ -n "$THEME" ] && [ "$THEME" != "<<-quit" ]; then
   DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-  git update-index --skip-worktree tmux/.tmux.theme.conf
+  git update-index --skip-worktree tmux/tmux.theme.conf
   git update-index --skip-worktree ghostty/theme
 
-  cp "$DOTFILES_DIR/themes/$THEME/.tmux.conf" ~/.tmux/.tmux.theme.conf
+  cp "$DOTFILES_DIR/themes/$THEME/tmux.conf" ~/.tmux/tmux.theme.conf
   cp "$DOTFILES_DIR/themes/$THEME/neovim.lua" ~/.config/nvim/lua/plugins/theme.lua
   cp "$DOTFILES_DIR/themes/$THEME/ghostty" ~/.config/ghostty/theme
 
