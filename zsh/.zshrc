@@ -57,3 +57,8 @@ if [[ -f /tmp/.restore-tmux-attachment ]]; then
   echo "Restoring tmux attachment..."
   tmux attach
 fi
+
+bindkey "^[[A" history-search-backward
+bindkey "^[[B" history-search-forward
+
+eval "$(fzf --zsh)"
