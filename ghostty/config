@@ -1,7 +1,7 @@
 font-family = "CaskaydiaMono Nerd Font"
 font-family = "D2Coding"
 font-size = 14
-adjust-cell-height = 5%
+adjust-cell-height = 3
 
 macos-titlebar-style = hidden
 window-width = 172
