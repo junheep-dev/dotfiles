@@ -34,6 +34,7 @@ return {
       })
     end,
     opts = {
+      nes = { enabled = false },
       cli = {
         win = {
           keys = {
