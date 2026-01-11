@@ -27,11 +27,6 @@ if [ -n "$THEME" ] && [ "$THEME" != "<<-quit" ]; then
   cp "$DOTFILES_DIR/themes/$THEME/ghostty" ~/.config/ghostty/theme
 
   tmux source ~/.tmux.conf
-
-  if pgrep -x ghostty >/dev/null; then
-    killall -SIGUSR1 ghostty
-    touch /tmp/.restore-tmux-attachment # Flag for zsh/.zshrc
-    sleep 0.5
-    open -a Ghostty
-  fi
+  pkill -SIGUSR2 ghostty
+  echo "Theme changed to $THEME_NAMES"
 fi
