@@ -14,7 +14,8 @@ if ! command -v gum &>/dev/null; then
 fi
 
 THEME_NAMES=("Tokyo Night" "Tokyo Night night" "Catppuccin" "Gruvbox Material" "GitHub Dark Default" "Kanagawa")
-THEME=$(gum choose "${THEME_NAMES[@]}" "<< Quit" --header "Choose your theme" --height 10 | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+THEME_DISPLAY=$(gum choose "${THEME_NAMES[@]}" "<< Quit" --header "Choose your theme" --height 10)
+THEME=$(echo "$THEME_DISPLAY" | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 
 if [ -n "$THEME" ] && [ "$THEME" != "<<-quit" ]; then
   DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,5 +29,5 @@ if [ -n "$THEME" ] && [ "$THEME" != "<<-quit" ]; then
 
   tmux source ~/.tmux.conf
   pkill -SIGUSR2 ghostty
-  echo "Theme changed to $THEME_NAMES"
+  echo "Theme changed to $THEME_DISPLAY"
 fi
