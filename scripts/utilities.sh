@@ -15,9 +15,6 @@ brew install --cask oversight
 print_header "MonitorControl"
 brew install --cask monitorcontrol
 
-print_header "Ice"
-brew install jordanbaird-ice
-
 print_header "Rectangle"
 brew install --cask rectangle
 
