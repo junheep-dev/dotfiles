@@ -66,6 +66,24 @@ return {
               mode = "nt",
               desc = "Zoom terminal",
             },
+            toggle_width = {
+              "<a-/>",
+              function()
+                local config = require("sidekick.config")
+                local terminal_mod = require("sidekick.cli.terminal")
+                local current = config.cli.win.split.width
+                local new_width = current == 0.5 and 0.4 or 0.5
+                config.cli.win.split.width = new_width
+                for _, terminal in pairs(terminal_mod.terminals) do
+                  terminal.opts.split.width = new_width
+                end
+                local win = vim.api.nvim_get_current_win()
+                vim.api.nvim_win_set_width(win, math.floor(vim.o.columns * new_width))
+                vim.cmd("wincmd =")
+              end,
+              mode = "nt",
+              desc = "Toggle width (40%/50%)",
+            },
           },
           split = {
             width = 0.4,
