@@ -104,18 +104,11 @@ return {
         mode = { "n", "t", "i", "x" },
       },
       {
-        "<leader>ac",
+        "<leader>as",
         function()
-          require("sidekick.cli").toggle({ name = "claude", focus = true })
+          require("sidekick.cli").select({ filter = { installed = true } })
         end,
-        desc = "Sidekick Toggle Claude",
-      },
-      {
-        "<leader>ac",
-        function()
-          require("sidekick.cli").toggle({ name = "claude", focus = true })
-        end,
-        desc = "Sidekick Toggle Claude",
+        desc = "Select CLI",
       },
       {
         "<leader>aC",
