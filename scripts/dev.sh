@@ -10,9 +10,7 @@ source "$DOTFILES_DIR/scripts/dev/ghostty.sh"
 source "$DOTFILES_DIR/scripts/dev/tmux.sh"
 source "$DOTFILES_DIR/scripts/dev/neovim.sh"
 source "$DOTFILES_DIR/scripts/dev/lazygit.sh"
-
-print_header "Claude Code"
-npm install -g @anthropic-ai/claude-code
+source "$DOTFILES_DIR/scripts/dev/claude.sh"
 
 print_header "GitHub CLI"
 brew install gh
