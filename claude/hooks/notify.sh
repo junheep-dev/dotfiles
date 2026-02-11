@@ -27,8 +27,9 @@ notify() {
     return
   fi
 
-  local claude_title
-  claude_title=$(tmux display-message -t "$pane" -p '#S - #I #W')
+  local title_format source_title
+  title_format=$(tmux show-options -gv set-titles-string)
+  source_title=$(tmux display-message -t "$pane" -p "$title_format")
 
   # Mark window with "!" when viewing a different window or session
   if [ "$claude_session" != "$client_session" ] || [ "$window_active" = "0" ]; then
@@ -47,11 +48,11 @@ notify() {
     [ -z "$client_tty" ] && return
 
     message=$(cat /dev/stdin 2>/dev/null | jq -r '.message // empty')
-    active_title=$(tmux display-message -t "${client_session}:" -p '#S - #I #W')
+    active_title=$(tmux display-message -t "${client_session}:" -p "$title_format")
 
     printf '\033]2;%s\007' "Claude Code" > "$client_tty"
     sleep 0.2
-    printf '\033]777;notify;%s;%s\007' "$claude_title" "$message" > "$client_tty"
+    printf '\033]777;notify;%s;%s\007' "$source_title" "$message" > "$client_tty"
     printf '\033]2;%s\007' "$active_title" > "$client_tty"
   fi
 }
