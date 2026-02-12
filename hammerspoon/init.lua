@@ -33,7 +33,7 @@ hs.hotkey.bind({ "cmd", "ctrl" }, "t", function()
 end)
 
 hs.hotkey.bind({ "cmd", "ctrl" }, "n", function()
-	moveWindowToFocusedSpace("Logseq")
+	moveWindowToFocusedSpace("Obsidian")
 end)
 
 hs.hotkey.bind({ "cmd", "ctrl" }, "c", function()
