@@ -38,6 +38,7 @@ return {
       cli = {
         win = {
           keys = {
+            prompt = false,
             hide_dot = {
               "<a-.>",
               "hide",
