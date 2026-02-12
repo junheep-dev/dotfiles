@@ -1,12 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "includeCoAuthoredBy": false,
-  "enabledPlugins": {
-    "lua-lsp@claude-plugins-official": true
-  },
-  "feedbackSurveyState": {
-    "lastShownTime": 1754051678518
-  },
   "hooks": {
     "SessionStart": [
       {
