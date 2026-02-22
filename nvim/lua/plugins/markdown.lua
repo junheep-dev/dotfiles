@@ -1,5 +1,16 @@
 return {
   {
+    "mfussenegger/nvim-lint",
+    opts = {
+      linters = {
+        ["markdownlint-cli2"] = {
+          args = { "--config", vim.fn.stdpath("config") .. "/nvim.markdownlint.json", "-" },
+        },
+      },
+    },
+  },
+
+  {
     "MeanderingProgrammer/render-markdown.nvim",
     opts = {
       code = {
