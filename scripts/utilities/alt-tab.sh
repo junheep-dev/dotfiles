@@ -5,17 +5,13 @@ print_header "AltTab"
 print_step "Install AltTab"
 brew install --cask alt-tab
 
-# To print current preference: defaults read com.lwouis.alt-tab-macos
-print_step "Set configurations"
-defaults write com.lwouis.alt-tab-macos holdShortcut ⌘
-defaults write com.lwouis.alt-tab-macos holdShortcut2 ⌘
-defaults write com.lwouis.alt-tab-macos spacesToShow 1
-defaults write com.lwouis.alt-tab-macos screensToShow 1
-defaults write com.lwouis.alt-tab-macos showWindowlessApps 1
-defaults write com.lwouis.alt-tab-macos spacesToShow2 1
-defaults write com.lwouis.alt-tab-macos screensToShow2 1
-defaults write com.lwouis.alt-tab-macos showWindowlessApps2 1
-defaults write com.lwouis.alt-tab-macos windowDisplayDelay 150
+# Shortcut keys are now stored as dicts with binary secureData,
+# so we apply the full preferences snapshot instead of writing keys individually.
+# To refresh: export from AltTab > Preferences > Misc > Export, save to alt-tab.plist,
+# then strip MSAppCenter*/NSWindow Frame*/SU* transient keys.
+print_step "Apply preferences"
+killall AltTab 2>/dev/null
+defaults import com.lwouis.alt-tab-macos "$DOTFILES_DIR/scripts/utilities/alt-tab.plist"
 
 print_step "Allow security permissions"
 echo -n "Press Enter to open AltTab. Then grant the required permissions."
