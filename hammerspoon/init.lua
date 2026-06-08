@@ -25,7 +25,7 @@ local function moveWindowToFocusedSpace(application, applicationName)
 end
 
 hs.hotkey.bind({ "cmd", "ctrl" }, "b", function()
-	moveWindowToFocusedSpace("Arc")
+	moveWindowToFocusedSpace("Dia")
 end)
 
 hs.hotkey.bind({ "cmd", "ctrl" }, "t", function()
