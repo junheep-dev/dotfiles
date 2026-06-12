@@ -1,5 +1,5 @@
 local function moveWindowToFocusedSpace(application, applicationName)
-	local app = hs.application.get(application)
+	local app = hs.application.find(application, true)
 
 	if app == nil then
 		hs.application.launchOrFocus(applicationName or application)
