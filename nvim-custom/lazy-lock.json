@@ -1,0 +1,4 @@
+{
+  "gruvbox-material": { "branch": "master", "commit": "790afe9dd085aa04eccd1da3626c5fa05c620e53" },
+  "lazy.nvim": { "branch": "main", "commit": "85c7ff3711b730b4030d03144f6db6375044ae82" }
+}
