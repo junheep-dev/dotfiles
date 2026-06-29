@@ -21,6 +21,7 @@ require("config.options")
 require("lazy").setup({
   spec = {
     { import = "plugins" },
+    { import = "plugins.lang" },
   },
   defaults = {
     -- custom plugins load on startup; set to true to lazy-load them by default
