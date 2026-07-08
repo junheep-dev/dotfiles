@@ -22,7 +22,11 @@ return {
   {
     "nvim-mini/mini.notify",
     version = "*",
+    lazy = false,
     opts = {},
+    keys = {
+      { "<leader>un", function() require("mini.notify").show_history() end, desc = "Notification History" },
+    },
   },
   {
     "nvim-mini/mini.pick",
