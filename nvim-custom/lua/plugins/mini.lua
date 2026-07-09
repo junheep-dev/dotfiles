@@ -25,7 +25,13 @@ return {
     lazy = false,
     opts = {},
     keys = {
-      { "<leader>un", function() require("mini.notify").show_history() end, desc = "Notification History" },
+      {
+        "<leader>un",
+        function()
+          require("mini.notify").show_history()
+        end,
+        desc = "Notification History",
+      },
     },
   },
   {
@@ -105,6 +111,7 @@ return {
           { mode = "n", keys = "<C-w>" },
         },
         clues = {
+          { mode = "n", keys = "<leader>a", desc = "+ai" },
           { mode = "n", keys = "<leader>b", desc = "+buffer" },
           { mode = "n", keys = "<leader>c", desc = "+code" },
           { mode = "n", keys = "<leader>e", desc = "+explore" },

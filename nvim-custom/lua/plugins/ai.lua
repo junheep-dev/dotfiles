@@ -14,11 +14,6 @@ vim.api.nvim_create_autocmd("LspAttach", {
     vim.keymap.set({ "i", "n" }, "<M-[>", function()
       vim.lsp.inline_completion.select({ count = -1 })
     end, { buffer = args.buf, desc = "Prev Copilot Suggestion" })
-    vim.keymap.set("i", "<Tab>", function()
-      if not vim.lsp.inline_completion.get() then
-        return "<Tab>"
-      end
-    end, { buffer = args.buf, expr = true, remap = true, desc = "Accept Copilot Suggestion" })
   end,
 })
 
@@ -30,5 +25,94 @@ return {
   {
     "neovim/nvim-lspconfig",
     opts = { servers = { copilot = {} } },
+  },
+  {
+    "folke/sidekick.nvim",
+    opts = {
+      cli = {
+        win = {
+          split = { width = 0.4 },
+        },
+        tools = {
+          claude_continue = { cmd = { "claude", "--continue" } },
+        },
+      },
+    },
+    keys = {
+      {
+        "<c-.>",
+        function()
+          require("sidekick.cli").toggle()
+        end,
+        desc = "Sidekick Toggle CLI",
+        mode = { "n", "t", "i", "x" },
+      },
+      {
+        "<leader>aa",
+        function()
+          require("sidekick.cli").toggle()
+        end,
+        desc = "Sidekick Toggle CLI",
+      },
+      {
+        "<leader>as",
+        function()
+          require("sidekick.cli").select({ filter = { installed = true } })
+        end,
+        desc = "Select CLI",
+      },
+      {
+        "<leader>ad",
+        function()
+          require("sidekick.cli").close()
+        end,
+        desc = "Detach CLI Session",
+      },
+      {
+        "<leader>at",
+        function()
+          require("sidekick.cli").send({ msg = "{this}" })
+        end,
+        mode = { "n", "x" },
+        desc = "Send This",
+      },
+      {
+        "<leader>af",
+        function()
+          require("sidekick.cli").send({ msg = "{file}" })
+        end,
+        desc = "Send File",
+      },
+      {
+        "<leader>av",
+        function()
+          require("sidekick.cli").send({ msg = "{selection}" })
+        end,
+        mode = { "x" },
+        desc = "Send Visual Selection",
+      },
+      {
+        "<leader>ap",
+        function()
+          require("sidekick.cli").prompt()
+        end,
+        mode = { "n", "x" },
+        desc = "Select Prompt",
+      },
+      {
+        "<leader>ac",
+        function()
+          require("sidekick.cli").toggle({ name = "claude", focus = true })
+        end,
+        desc = "Toggle Claude",
+      },
+      {
+        "<leader>aC",
+        function()
+          require("sidekick.cli").toggle({ name = "claude_continue", focus = true })
+        end,
+        desc = "Toggle Claude Continue",
+      },
+    },
   },
 }
