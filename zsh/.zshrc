@@ -42,7 +42,6 @@ source $(brew --prefix)/share/powerlevel10k/powerlevel10k.zsh-theme
 
 # work
 alias deploy="~/workspace/dotfiles/work/deploy.sh"
-alias nvt='XDG_CONFIG_HOME=~/workspace/dotfiles NVIM_APPNAME=nvim-custom nvim'
 export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"
 
 # Blog CLI completion
