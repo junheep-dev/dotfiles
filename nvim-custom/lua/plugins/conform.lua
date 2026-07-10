@@ -2,6 +2,17 @@ return {
   {
     "stevearc/conform.nvim",
     dependencies = { "mason-org/mason.nvim" },
+    lazy = false,
+    keys = {
+      {
+        "<leader>lf",
+        function()
+          require("conform").format()
+        end,
+        mode = { "n", "x" },
+        desc = "Format",
+      },
+    },
     opts = {
       -- Will be added by each lua file under /lang directory
       formatters_by_ft = {},

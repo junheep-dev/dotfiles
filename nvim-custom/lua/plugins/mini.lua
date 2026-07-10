@@ -2,13 +2,46 @@ return {
   {
     "nvim-mini/mini.diff",
     version = "*",
+    lazy = false,
     opts = {},
+    keys = {
+      {
+        "<leader>go",
+        function()
+          require("mini.diff").toggle_overlay()
+        end,
+        desc = "Toggle Overlay",
+      },
+    },
   },
   {
     "nvim-mini/mini-git",
     main = "mini.git",
     version = "*",
+    lazy = false,
     opts = {},
+    keys = {
+      { "<leader>ga", "<Cmd>Git diff --cached<CR>", desc = "Added Diff" },
+      { "<leader>gA", "<Cmd>Git diff --cached -- %<CR>", desc = "Added Diff Buffer" },
+      { "<leader>gc", "<Cmd>Git commit<CR>", desc = "Commit" },
+      { "<leader>gC", "<Cmd>Git commit --amend<CR>", desc = "Commit Amend" },
+      { "<leader>gd", "<Cmd>Git diff<CR>", desc = "Diff" },
+      { "<leader>gD", "<Cmd>Git diff -- %<CR>", desc = "Diff Buffer" },
+      { "<leader>gl", [[<Cmd>Git log --pretty=format:\%h\ \%as\ │\ \%s --topo-order<CR>]], desc = "Log" },
+      {
+        "<leader>gL",
+        [[<Cmd>Git log --pretty=format:\%h\ \%as\ │\ \%s --topo-order --follow -- %<CR>]],
+        desc = "Log Buffer",
+      },
+      {
+        "<leader>gs",
+        function()
+          require("mini.git").show_at_cursor()
+        end,
+        mode = { "n", "x" },
+        desc = "Show At Cursor",
+      },
+    },
   },
   {
     "nvim-mini/mini.bracketed",
@@ -80,7 +113,17 @@ return {
   {
     "nvim-mini/mini.trailspace",
     version = "*",
+    lazy = false,
     opts = {},
+    keys = {
+      {
+        "<leader>ot",
+        function()
+          require("mini.trailspace").trim()
+        end,
+        desc = "Trim Trailspace",
+      },
+    },
   },
   {
     "nvim-mini/mini.splitjoin",
@@ -153,6 +196,16 @@ return {
         end,
         desc = "Remove Label",
       },
+      {
+        "<leader>fv",
+        "<Cmd>Pick visit_paths cwd=\"\"<CR>",
+        desc = "Visit Paths (All)",
+      },
+      {
+        "<leader>fV",
+        "<Cmd>Pick visit_paths<CR>",
+        desc = "Visit Paths (Cwd)",
+      },
     },
   },
   {
@@ -213,6 +266,17 @@ return {
       { "<leader>fs", '<Cmd>Pick lsp scope="workspace_symbol_live"<CR>', desc = "Symbols Workspace" },
       { "<leader>fS", '<Cmd>Pick lsp scope="document_symbol"<CR>', desc = "Symbols Document" },
       { "<leader>fR", '<Cmd>Pick lsp scope="references"<CR>', desc = "References (LSP)" },
+      { "<leader>fa", '<Cmd>Pick git_hunks scope="staged"<CR>', desc = "Added Hunks (All)" },
+      { "<leader>fA", '<Cmd>Pick git_hunks path="%" scope="staged"<CR>', desc = "Added Hunks (Buf)" },
+      { "<leader>fm", "<Cmd>Pick git_hunks<CR>", desc = "Modified Hunks (All)" },
+      { "<leader>fM", '<Cmd>Pick git_hunks path="%"<CR>', desc = "Modified Hunks (Buf)" },
+      { "<leader>fc", "<Cmd>Pick git_commits<CR>", desc = "Commits (All)" },
+      { "<leader>fC", '<Cmd>Pick git_commits path="%"<CR>', desc = "Commits (Buf)" },
+      { "<leader>f/", '<Cmd>Pick history scope="/"<CR>', desc = '"/" History' },
+      { "<leader>f:", '<Cmd>Pick history scope=":"<CR>', desc = '":" History' },
+      { "<leader>fH", "<Cmd>Pick hl_groups<CR>", desc = "Highlight Groups" },
+      { "<leader>fl", '<Cmd>Pick buf_lines scope="all"<CR>', desc = "Lines (All)" },
+      { "<leader>fL", '<Cmd>Pick buf_lines scope="current"<CR>', desc = "Lines (Buf)" },
     },
   },
   {
@@ -289,6 +353,9 @@ return {
           { mode = "n", keys = "<leader>c", desc = "+code" },
           { mode = "n", keys = "<leader>e", desc = "+explore" },
           { mode = "n", keys = "<leader>f", desc = "+file" },
+          { mode = "n", keys = "<leader>g", desc = "+git" },
+          { mode = "n", keys = "<leader>l", desc = "+language" },
+          { mode = "n", keys = "<leader>o", desc = "+other" },
           { mode = "n", keys = "<leader>t", desc = "+tabs" },
           { mode = "n", keys = "<leader>u", desc = "+ui" },
           { mode = "n", keys = "<leader>v", desc = "+visits" },

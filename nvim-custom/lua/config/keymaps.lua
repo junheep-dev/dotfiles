@@ -60,10 +60,19 @@ map("x", "<", "<gv")
 map("x", ">", ">gv")
 
 -- lazy
-map("n", "<leader>l", "<cmd>Lazy<cr>", { desc = "Lazy" })
+map("n", "<leader>L", "<cmd>Lazy<cr>", { desc = "Lazy" })
 
 -- new file
 map("n", "<leader>fn", "<cmd>enew<cr>", { desc = "New File" })
+
+-- explore/edit
+map("n", "<leader>ei", "<cmd>edit $MYVIMRC<cr>", { desc = "Init.lua" })
+map("n", "<leader>eq", function()
+	vim.cmd(vim.fn.getqflist({ winid = true }).winid ~= 0 and "cclose" or "copen")
+end, { desc = "Quickfix List" })
+map("n", "<leader>eQ", function()
+	vim.cmd(vim.fn.getloclist(0, { winid = true }).winid ~= 0 and "lclose" or "lopen")
+end, { desc = "Location List" })
 
 -- diagnostics
 local diagnostic_goto = function(next, severity)
