@@ -1,13 +1,13 @@
 return {
   {
     "neovim/nvim-lspconfig",
-    dependencies = { "saghen/blink.cmp" },
+    dependencies = { "nvim-mini/mini.completion" },
     opts = {
       servers = {},
     },
     config = function(_, opts)
       vim.lsp.config("*", {
-        capabilities = require("blink.cmp").get_lsp_capabilities(),
+        capabilities = require("mini.completion").get_lsp_capabilities(),
       })
 
       vim.api.nvim_create_autocmd("LspAttach", {
@@ -17,6 +17,7 @@ return {
             buffer = args.buf,
             desc = "Goto Definition",
           })
+          vim.bo[args.buf].omnifunc = "v:lua.MiniCompletion.completefunc_lsp"
         end,
       })
 

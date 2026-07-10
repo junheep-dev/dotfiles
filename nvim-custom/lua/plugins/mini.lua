@@ -1,5 +1,98 @@
 return {
   {
+    "nvim-mini/mini.diff",
+    version = "*",
+    opts = {},
+  },
+  {
+    "nvim-mini/mini-git",
+    main = "mini.git",
+    version = "*",
+    opts = {},
+  },
+  {
+    "nvim-mini/mini.completion",
+    version = "*",
+    lazy = false,
+    opts = {
+      lsp_completion = {
+        source_func = "omnifunc",
+        auto_setup = false,
+      },
+    },
+    keys = {
+      {
+        "<Tab>",
+        function()
+          if vim.snippet.active({ direction = 1 }) then
+            vim.snippet.jump(1)
+            return ""
+          end
+          if require("sidekick").nes_jump_or_apply() then
+            return ""
+          end
+          if vim.lsp.inline_completion.get() then
+            return ""
+          end
+          return "<Tab>"
+        end,
+        mode = "i",
+        expr = true,
+        desc = "Smart Tab",
+      },
+    },
+  },
+  {
+    "nvim-mini/mini.cmdline",
+    version = "*",
+    opts = {},
+  },
+  {
+    "nvim-mini/mini.icons",
+    version = "*",
+    opts = {},
+  },
+  {
+    "nvim-mini/mini.pairs",
+    version = "*",
+    opts = {},
+  },
+  {
+    "nvim-mini/mini.surround",
+    version = "*",
+    opts = {},
+  },
+  {
+    "nvim-mini/mini.ai",
+    version = "*",
+    opts = {},
+  },
+  {
+    "nvim-mini/mini.comment",
+    version = "*",
+    opts = {},
+  },
+  {
+    "nvim-mini/mini.trailspace",
+    version = "*",
+    opts = {},
+  },
+  {
+    "nvim-mini/mini.splitjoin",
+    version = "*",
+    opts = {},
+  },
+  {
+    "nvim-mini/mini.move",
+    version = "*",
+    opts = {},
+  },
+  {
+    "nvim-mini/mini.sessions",
+    version = "*",
+    opts = {},
+  },
+  {
     "nvim-mini/mini.input",
     version = "*",
     opts = {},
@@ -65,7 +158,7 @@ return {
     opts = {},
   },
   {
-    "nvim-mini/mini.jump2d",
+    "nvim-mini/mini.operators",
     version = "*",
     opts = {},
   },
@@ -74,8 +167,20 @@ return {
     version = "*",
     opts = {},
     keys = {
-      { "<leader>ef", function() require("mini.files").open(vim.api.nvim_buf_get_name(0)) end, desc = "Explorer (current file)" },
-      { "<leader>ed", function() require("mini.files").open(vim.uv.cwd()) end, desc = "Explorer (cwd)" },
+      {
+        "<leader>ef",
+        function()
+          require("mini.files").open(vim.api.nvim_buf_get_name(0))
+        end,
+        desc = "Explorer (current file)",
+      },
+      {
+        "<leader>ed",
+        function()
+          require("mini.files").open(vim.uv.cwd())
+        end,
+        desc = "Explorer (cwd)",
+      },
     },
   },
   {
@@ -92,6 +197,11 @@ return {
   },
   {
     "nvim-mini/mini.statusline",
+    version = "*",
+    opts = {},
+  },
+  {
+    "nvim-mini/mini.tabline",
     version = "*",
     opts = {},
   },
