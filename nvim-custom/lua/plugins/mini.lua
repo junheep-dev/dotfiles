@@ -11,6 +11,11 @@ return {
     opts = {},
   },
   {
+    "nvim-mini/mini.bracketed",
+    version = "*",
+    opts = {},
+  },
+  {
     "nvim-mini/mini.completion",
     version = "*",
     lazy = false,
@@ -91,6 +96,64 @@ return {
     "nvim-mini/mini.sessions",
     version = "*",
     opts = {},
+  },
+  {
+    "nvim-mini/mini.visits",
+    version = "*",
+    lazy = false,
+    opts = {},
+    keys = {
+      {
+        "<leader>vc",
+        function()
+          local sort_latest = require("mini.visits").gen_sort.default({ recency_weight = 1 })
+          require("mini.extra").pickers.visit_paths(
+            { cwd = "", filter = "core", sort = sort_latest },
+            { source = { name = "Core Visits (All)" } }
+          )
+        end,
+        desc = "Core Visits (All)",
+      },
+      {
+        "<leader>vC",
+        function()
+          local sort_latest = require("mini.visits").gen_sort.default({ recency_weight = 1 })
+          require("mini.extra").pickers.visit_paths(
+            { cwd = nil, filter = "core", sort = sort_latest },
+            { source = { name = "Core Visits (Cwd)" } }
+          )
+        end,
+        desc = "Core Visits (Cwd)",
+      },
+      {
+        "<leader>vv",
+        function()
+          require("mini.visits").add_label("core")
+        end,
+        desc = "Add Core Label",
+      },
+      {
+        "<leader>vV",
+        function()
+          require("mini.visits").remove_label("core")
+        end,
+        desc = "Remove Core Label",
+      },
+      {
+        "<leader>vl",
+        function()
+          require("mini.visits").add_label()
+        end,
+        desc = "Add Label",
+      },
+      {
+        "<leader>vL",
+        function()
+          require("mini.visits").remove_label()
+        end,
+        desc = "Remove Label",
+      },
+    },
   },
   {
     "nvim-mini/mini.input",
@@ -228,6 +291,7 @@ return {
           { mode = "n", keys = "<leader>f", desc = "+file" },
           { mode = "n", keys = "<leader>t", desc = "+tabs" },
           { mode = "n", keys = "<leader>u", desc = "+ui" },
+          { mode = "n", keys = "<leader>v", desc = "+visits" },
           miniclue.gen_clues.square_brackets(),
           miniclue.gen_clues.g(),
           miniclue.gen_clues.z(),
