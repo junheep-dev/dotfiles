@@ -92,3 +92,61 @@ end
 hs.hotkey.bind({ "alt", "ctrl" }, "c", function()
 	centerWindowWithSize(1800, 1200)
 end)
+
+-- Focus modes: 지정한 앱만 보이고 나머지 일반 앱은 전부 숨김
+local DIA = "company.thebrowser.dia"
+local GHOSTTY = "com.mitchellh.ghostty"
+local ZOOM = "us.zoom.xos"
+
+local function hideApp(app)
+	if not app:hide() then
+		-- 일부 앱(Dia 등)은 hide()를 거부함 — System Events 경로로 폴백
+		hs.osascript.applescript(
+			string.format([[tell application "System Events" to set visible of process "%s" to false]], app:name())
+		)
+	end
+end
+
+local function showApp(app)
+	if not app:unhide() then
+		-- hide()와 마찬가지로 unhide()도 거부하는 앱(Dia 등) 폴백
+		hs.osascript.applescript(
+			string.format([[tell application "System Events" to set visible of process "%s" to true]], app:name())
+		)
+	end
+end
+
+local function focusMode(bundleIDs)
+	local show = {}
+	for _, id in ipairs(bundleIDs) do
+		show[id] = true
+		local app = hs.application.get(id)
+		if app then
+			showApp(app)
+		else
+			hs.application.launchOrFocusByBundleID(id)
+		end
+	end
+
+	for _, app in ipairs(hs.application.runningApplications()) do
+		-- kind() == 1: Dock에 뜨는 일반 앱만 (메뉴바 상주 앱 등은 제외)
+		if app:kind() == 1 and not show[app:bundleID()] then
+			hideApp(app)
+		end
+	end
+
+	local first = hs.application.get(bundleIDs[1])
+	if first then
+		first:activate()
+	end
+end
+
+-- code: 터미널만
+hs.hotkey.bind({ "alt" }, "1", function()
+	focusMode({ GHOSTTY })
+end)
+
+-- meeting: 줌 + 브라우저
+hs.hotkey.bind({ "alt" }, "2", function()
+	focusMode({ ZOOM, DIA })
+end)
