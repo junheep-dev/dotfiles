@@ -27,6 +27,26 @@ if [ -n "$THEME" ] && [ "$THEME" != "<<-quit" ]; then
   cp "$DOTFILES_DIR/themes/$THEME/neovim.lua" ~/.config/nvim/lua/plugins/theme.lua
   cp "$DOTFILES_DIR/themes/$THEME/ghostty" ~/.config/ghostty/theme
 
+  # Desktop wallpaper: warm themes -> Golden Gate day, cool/dark themes ->
+  # Golden Gate night. Images live in ~/Downloads.
+  WP_DIR="$HOME/Downloads/wallpapers"
+  GG_DAY="$WP_DIR/gruvbox-hard/GoldenGate_Day.jpg"
+  GG_NIGHT="$WP_DIR/tokyonight-night/GoldenGate_Mac_Night.jpg"
+  case "$THEME" in
+  gruvbox-material | gruvbox-material-hard | kanagawa-dragon)
+    WALLPAPER="$GG_DAY"
+    ;;
+  tokyo-night-moon | tokyo-night-night | catppuccin-mocha | github-dark-default)
+    WALLPAPER="$GG_NIGHT"
+    ;;
+  *)
+    WALLPAPER="$WP_DIR/nyc-manhattan-dusk-sunset.jpg"
+    ;;
+  esac
+  if [ -f "$WALLPAPER" ]; then
+    osascript -e "tell application \"System Events\" to set picture of every desktop to \"$WALLPAPER\""
+  fi
+
   tmux source ~/.tmux.conf
   pkill -SIGUSR2 ghostty
   echo "Theme changed to $THEME_DISPLAY"
