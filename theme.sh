@@ -28,10 +28,10 @@ if [ -n "$THEME" ] && [ "$THEME" != "<<-quit" ]; then
   cp "$DOTFILES_DIR/themes/$THEME/ghostty" ~/.config/ghostty/theme
 
   # Desktop wallpaper: warm themes -> Golden Gate day, cool/dark themes ->
-  # Golden Gate night. Images live in ~/Downloads.
-  WP_DIR="$HOME/Downloads/wallpapers"
-  GG_DAY="$WP_DIR/gruvbox-hard/GoldenGate_Day.jpg"
-  GG_NIGHT="$WP_DIR/tokyonight-night/GoldenGate_Mac_Night.jpg"
+  # Golden Gate night, anything else -> NYC (fallback).
+  WP_DIR="$DOTFILES_DIR/wallpapers"
+  GG_DAY="$WP_DIR/golden-gate-day.jpg"
+  GG_NIGHT="$WP_DIR/golden-gate-night.jpg"
   case "$THEME" in
   gruvbox-material | gruvbox-material-hard | kanagawa-dragon)
     WALLPAPER="$GG_DAY"
@@ -40,7 +40,7 @@ if [ -n "$THEME" ] && [ "$THEME" != "<<-quit" ]; then
     WALLPAPER="$GG_NIGHT"
     ;;
   *)
-    WALLPAPER="$WP_DIR/nyc-manhattan-dusk-sunset.jpg"
+    WALLPAPER="$WP_DIR/nyc-manhattan-dusk.jpg"
     ;;
   esac
   if [ -f "$WALLPAPER" ]; then
