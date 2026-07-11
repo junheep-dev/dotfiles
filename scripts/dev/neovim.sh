@@ -18,7 +18,4 @@ brew install fd
 print_step "Install tree-sitter-cli for nvim-treesitter parser builds"
 brew install tree-sitter-cli
 
-print_step "Install imagemagick for snacks.nvim image"
-brew install imagemagick
-
 print_success "Neovim setup complete"
