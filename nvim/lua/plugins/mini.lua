@@ -291,6 +291,9 @@ return {
   {
     "nvim-mini/mini.pick",
     version = "*",
+    -- load on startup (keys would otherwise lazy-load) so setup() replaces
+    -- vim.ui.select from the very first select prompt
+    lazy = false,
     opts = {},
     keys = {
       { "<leader>ff", "<Cmd>Pick files<CR>", desc = "Files" },
