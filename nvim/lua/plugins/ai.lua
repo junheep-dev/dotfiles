@@ -1,29 +1,23 @@
-vim.api.nvim_create_autocmd("LspAttach", {
-  group = vim.api.nvim_create_augroup("junheep_copilot", { clear = true }),
-  callback = function(args)
-    local client = vim.lsp.get_client_by_id(args.data.client_id)
-    if not client or client.name ~= "copilot" then
-      return
-    end
-
-    vim.lsp.inline_completion.enable(true, { bufnr = args.buf })
-
-    vim.keymap.set({ "i", "n" }, "<M-]>", function()
-      vim.lsp.inline_completion.select({ count = 1 })
-    end, { buffer = args.buf, desc = "Next Copilot Suggestion" })
-    vim.keymap.set({ "i", "n" }, "<M-[>", function()
-      vim.lsp.inline_completion.select({ count = -1 })
-    end, { buffer = args.buf, desc = "Prev Copilot Suggestion" })
-  end,
-})
 return {
   {
-    "mason-org/mason.nvim",
-    opts = { ensure_installed = { "copilot-language-server" } },
-  },
-  {
-    "neovim/nvim-lspconfig",
-    opts = { servers = { copilot = {} } },
+    "zbirenbaum/copilot.lua",
+    cmd = "Copilot",
+    event = "InsertEnter",
+    -- Provides inline suggestions AND runs the "copilot" LSP client that
+    -- sidekick.nvim's NES reuses (no separate copilot-language-server needed).
+    opts = {
+      -- Manual mode: no ghost text until summoned with <M-]> / <M-[>.
+      suggestion = {
+        auto_trigger = false,
+        hide_during_completion = true,
+        keymap = {
+          accept = false, -- accepted via the <Tab> smart-tab in mini.lua
+          next = "<M-]>",
+          prev = "<M-[>",
+          dismiss = "<C-]>",
+        },
+      },
+    },
   },
   {
     "folke/sidekick.nvim",

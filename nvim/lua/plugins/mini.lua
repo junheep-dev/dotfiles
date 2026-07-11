@@ -88,27 +88,6 @@ return {
         auto_setup = false,
       },
     },
-    keys = {
-      {
-        "<Tab>",
-        function()
-          if vim.snippet.active({ direction = 1 }) then
-            vim.snippet.jump(1)
-            return ""
-          end
-          if require("sidekick").nes_jump_or_apply() then
-            return ""
-          end
-          if vim.lsp.inline_completion.get() then
-            return ""
-          end
-          return "<Tab>"
-        end,
-        mode = "i",
-        expr = true,
-        desc = "Smart Tab",
-      },
-    },
   },
   {
     "nvim-mini/mini.cmdline",
