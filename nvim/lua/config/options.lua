@@ -67,7 +67,6 @@ opt.grepformat = "%f:%l:%c:%m"
 opt.completeopt = "menu,menuone,noselect"
 opt.pumheight = 10 -- maximum number of entries in a popup
 opt.pumblend = 10 -- popup blend
-opt.wildmode = "longest:full,full" -- command-line completion mode
 
 -- Windows & splits
 opt.splitbelow = true -- put new windows below current
