@@ -243,7 +243,7 @@ return {
       },
       {
         "<leader>fv",
-        "<Cmd>Pick visit_paths cwd=\"\"<CR>",
+        '<Cmd>Pick visit_paths cwd=""<CR>',
         desc = "Visit Paths (All)",
       },
       {
@@ -296,6 +296,9 @@ return {
     lazy = false,
     opts = {},
     keys = {
+      { "<leader><leader>", "<Cmd>Pick files<CR>", desc = "Files" },
+      { "<leader>,", "<Cmd>Pick buffers<CR>", desc = "Buffers" },
+      { "<leader>/", "<Cmd>Pick grep_live<CR>", desc = "Grep Live" },
       { "<leader>ff", "<Cmd>Pick files<CR>", desc = "Files" },
       { "<leader>fg", "<Cmd>Pick grep_live<CR>", desc = "Grep Live" },
       { "<leader>fG", '<Cmd>Pick grep pattern="<cword>"<CR>', desc = "Grep Current Word" },
@@ -412,6 +415,9 @@ return {
           miniclue.gen_clues.g(),
           miniclue.gen_clues.z(),
           miniclue.gen_clues.windows(),
+        },
+        window = {
+          delay = 0,
         },
       })
     end,
