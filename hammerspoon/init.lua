@@ -98,46 +98,41 @@ local DIA = "company.thebrowser.dia"
 local GHOSTTY = "com.mitchellh.ghostty"
 local ZOOM = "us.zoom.xos"
 
-local function hideApp(app)
+-- Dia 등 일부 Chromium 앱은 hide()를 거부 → System Events로 폴백
+local function hide(app)
 	if not app:hide() then
-		-- 일부 앱(Dia 등)은 hide()를 거부함 — System Events 경로로 폴백
 		hs.osascript.applescript(
 			string.format([[tell application "System Events" to set visible of process "%s" to false]], app:name())
 		)
 	end
 end
 
-local function showApp(app)
-	if not app:unhide() then
-		-- hide()와 마찬가지로 unhide()도 거부하는 앱(Dia 등) 폴백
-		hs.osascript.applescript(
-			string.format([[tell application "System Events" to set visible of process "%s" to true]], app:name())
-		)
-	end
-end
-
 local function focusMode(bundleIDs)
-	local show = {}
+	local keep = {}
 	for _, id in ipairs(bundleIDs) do
-		show[id] = true
+		keep[id] = true
+	end
+
+	-- 타겟 앱들 띄우고, 첫 번째를 frontmost로 확정
+	for _, id in ipairs(bundleIDs) do
 		local app = hs.application.get(id)
 		if app then
-			showApp(app)
+			app:unhide()
 		else
 			hs.application.launchOrFocusByBundleID(id)
 		end
 	end
-
-	for _, app in ipairs(hs.application.runningApplications()) do
-		-- kind() == 1: Dock에 뜨는 일반 앱만 (메뉴바 상주 앱 등은 제외)
-		if app:kind() == 1 and not show[app:bundleID()] then
-			hideApp(app)
-		end
-	end
-
 	local first = hs.application.get(bundleIDs[1])
 	if first then
 		first:activate()
+	end
+
+	-- 나머지 숨기기 (frontmost가 확정됐으니 다시 안 올라옴)
+	for _, app in ipairs(hs.application.runningApplications()) do
+		-- kind() == 1: Dock에 뜨는 일반 앱만 (메뉴바 상주 앱 등은 제외)
+		if app:kind() == 1 and not keep[app:bundleID()] then
+			hide(app)
+		end
 	end
 end
 
