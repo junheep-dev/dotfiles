@@ -81,6 +81,17 @@ vim.api.nvim_create_autocmd("BufWritePre", {
 	end,
 })
 
+-- disable mini.indentscope in non-file buffers (terminal, help, starter, sidekick, …)
+-- TermOpen is needed for terminals: at BufWinEnter their buftype is still ""
+vim.api.nvim_create_autocmd({ "BufWinEnter", "TermOpen" }, {
+	group = augroup("no_indentscope"),
+	callback = function(ev)
+		if vim.bo[ev.buf].buftype ~= "" then
+			vim.b[ev.buf].miniindentscope_disable = true
+		end
+	end,
+})
+
 -- detect Hugo go templates in html files
 vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
 	group = augroup("hugo_gotmpl"),
