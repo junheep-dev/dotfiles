@@ -417,7 +417,7 @@ return {
           miniclue.gen_clues.windows(),
         },
         window = {
-          delay = 0,
+          delay = 200,
         },
       })
     end,
