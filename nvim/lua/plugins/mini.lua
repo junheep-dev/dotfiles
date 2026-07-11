@@ -404,6 +404,7 @@ return {
           { mode = "n", keys = "<leader>g", desc = "+git" },
           { mode = "n", keys = "<leader>l", desc = "+language" },
           { mode = "n", keys = "<leader>o", desc = "+other" },
+          { mode = "n", keys = "<leader>s", desc = "+session" },
           { mode = "n", keys = "<leader>t", desc = "+tabs" },
           { mode = "n", keys = "<leader>u", desc = "+ui" },
           { mode = "n", keys = "<leader>v", desc = "+visits" },
