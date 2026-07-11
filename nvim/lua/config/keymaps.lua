@@ -23,23 +23,20 @@ map("n", "<C-S-Left>", "<cmd>vertical resize -2<cr>", { desc = "Decrease Window 
 map("n", "<C-S-Right>", "<cmd>vertical resize +2<cr>", { desc = "Increase Window Width" })
 
 -- buffers
-map("n", "<S-h>", "<cmd>bprevious<cr>", { desc = "Prev Buffer" })
-map("n", "<S-l>", "<cmd>bnext<cr>", { desc = "Next Buffer" })
 map("n", "<leader>`", "<cmd>e #<cr>", { desc = "Switch to Other Buffer" })
-map("n", "<leader>bd", "<cmd>bd<cr>", { desc = "Delete Buffer and Window" })
 
 -- clear search with <esc>
 map({ "i", "n", "s" }, "<esc>", function()
-	vim.cmd("noh")
-	return "<esc>"
+  vim.cmd("noh")
+  return "<esc>"
 end, { expr = true, desc = "Escape and Clear hlsearch" })
 
 -- clear search, diff update and redraw
 map(
-	"n",
-	"<leader>ur",
-	"<Cmd>nohlsearch<Bar>diffupdate<Bar>normal! <C-L><CR>",
-	{ desc = "Redraw / Clear hlsearch / Diff Update" }
+  "n",
+  "<leader>ur",
+  "<Cmd>nohlsearch<Bar>diffupdate<Bar>normal! <C-L><CR>",
+  { desc = "Redraw / Clear hlsearch / Diff Update" }
 )
 
 -- saner n/N: always search the same direction + center
@@ -68,21 +65,21 @@ map("n", "<leader>fn", "<cmd>enew<cr>", { desc = "New File" })
 -- explore/edit
 map("n", "<leader>ei", "<cmd>edit $MYVIMRC<cr>", { desc = "Init.lua" })
 map("n", "<leader>eq", function()
-	vim.cmd(vim.fn.getqflist({ winid = true }).winid ~= 0 and "cclose" or "copen")
+  vim.cmd(vim.fn.getqflist({ winid = true }).winid ~= 0 and "cclose" or "copen")
 end, { desc = "Quickfix List" })
 map("n", "<leader>eQ", function()
-	vim.cmd(vim.fn.getloclist(0, { winid = true }).winid ~= 0 and "lclose" or "lopen")
+  vim.cmd(vim.fn.getloclist(0, { winid = true }).winid ~= 0 and "lclose" or "lopen")
 end, { desc = "Location List" })
 
 -- diagnostics
 local diagnostic_goto = function(next, severity)
-	return function()
-		vim.diagnostic.jump({
-			count = (next and 1 or -1) * vim.v.count1,
-			severity = severity and vim.diagnostic.severity[severity] or nil,
-			float = true,
-		})
-	end
+  return function()
+    vim.diagnostic.jump({
+      count = (next and 1 or -1) * vim.v.count1,
+      severity = severity and vim.diagnostic.severity[severity] or nil,
+      float = true,
+    })
+  end
 end
 map("n", "<leader>cd", vim.diagnostic.open_float, { desc = "Line Diagnostics" })
 map("n", "]e", diagnostic_goto(true, "ERROR"), { desc = "Next Error" })
@@ -98,6 +95,6 @@ map("n", "<leader>to", "<cmd>tabonly<cr>", { desc = "Close Other Tabs" })
 -- highlights / tree under cursor
 map("n", "<leader>ui", vim.show_pos, { desc = "Inspect Pos" })
 map("n", "<leader>uI", function()
-	vim.treesitter.inspect_tree()
-	vim.api.nvim_input("I")
+  vim.treesitter.inspect_tree()
+  vim.api.nvim_input("I")
 end, { desc = "Inspect Tree" })
