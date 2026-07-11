@@ -136,12 +136,17 @@ local function focusMode(bundleIDs)
 	end
 end
 
--- code: 터미널만
+-- browser: 브라우저만
 hs.hotkey.bind({ "alt" }, "1", function()
+	focusMode({ DIA })
+end)
+
+-- code: 터미널만
+hs.hotkey.bind({ "alt" }, "2", function()
 	focusMode({ GHOSTTY })
 end)
 
 -- meeting: 줌 + 브라우저
-hs.hotkey.bind({ "alt" }, "2", function()
+hs.hotkey.bind({ "alt" }, "3", function()
 	focusMode({ ZOOM, DIA })
 end)
