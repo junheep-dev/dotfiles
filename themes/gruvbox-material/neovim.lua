@@ -1,10 +1,11 @@
 -- Active theme + its own config, consumed by the theme manager
 -- (nvim/lua/plugins/colorscheme.lua). Lives under plugins/ so lazy's
 -- change_detection watches it; theme.sh swaps this file in.
--- gruvbox-material reads g: vars, so set them here (runs on every import,
--- i.e. before the colorscheme is applied on startup and on live switch).
+-- gruvbox-material with the "mix" foreground palette (the default). g: vars set
+-- here so they apply before the colorscheme; both are explicit so switching
+-- to/from the hard variant resets them.
 vim.g.active_colorscheme = "gruvbox-material"
--- set explicitly so switching from the hard variant resets the background
 vim.g.gruvbox_material_background = "medium"
+vim.g.gruvbox_material_foreground = "mix"
 vim.g.gruvbox_material_enable_italic = true
 return {}

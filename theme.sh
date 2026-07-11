@@ -13,7 +13,7 @@ if ! command -v gum &>/dev/null; then
   fi
 fi
 
-THEME_NAMES=("Tokyo Night" "Tokyo Night night" "Catppuccin" "Gruvbox Material" "Gruvbox Material Hard" "GitHub Dark Default" "Kanagawa")
+THEME_NAMES=("Tokyo Night Moon" "Tokyo Night Night" "Catppuccin Mocha" "Gruvbox Material" "Gruvbox Material Hard" "GitHub Dark Default" "Kanagawa Dragon")
 THEME_DISPLAY=$(gum choose "${THEME_NAMES[@]}" "<< Quit" --header "Choose your theme" --height 10)
 THEME=$(echo "$THEME_DISPLAY" | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 
