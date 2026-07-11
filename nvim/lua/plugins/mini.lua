@@ -1,3 +1,6 @@
+-- version = "*" pins each module to its latest stable tag (mini follows
+-- semver), overriding the global `defaults.version = false` (= track HEAD).
+-- mini's main branch is explicitly "beta testing phase" per its docs.
 return {
   {
     "nvim-mini/mini.diff",
