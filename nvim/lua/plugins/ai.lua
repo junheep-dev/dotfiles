@@ -16,7 +16,6 @@ vim.api.nvim_create_autocmd("LspAttach", {
     end, { buffer = args.buf, desc = "Prev Copilot Suggestion" })
   end,
 })
-
 return {
   {
     "mason-org/mason.nvim",
@@ -31,7 +30,7 @@ return {
     opts = {
       cli = {
         win = {
-          split = { width = 0.4 },
+          split = { width = 0.5 },
         },
         tools = {
           claude_continue = { cmd = { "claude", "--continue" } },
