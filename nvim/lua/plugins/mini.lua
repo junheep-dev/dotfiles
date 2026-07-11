@@ -168,7 +168,22 @@ return {
   {
     "nvim-mini/mini.sessions",
     version = "*",
+    -- load on startup so autowrite persists the active session on exit
+    lazy = false,
     opts = {},
+    keys = {
+      {
+        "<leader>sn",
+        function()
+          vim.ui.input({ prompt = "Session name: " }, require("mini.sessions").write)
+        end,
+        desc = "New Session",
+      },
+      { "<leader>sw", "<Cmd>lua MiniSessions.write()<CR>", desc = "Write Current Session" },
+      { "<leader>sr", '<Cmd>lua MiniSessions.select("read")<CR>', desc = "Read Session" },
+      { "<leader>sd", '<Cmd>lua MiniSessions.select("delete")<CR>', desc = "Delete Session" },
+      { "<leader>sR", "<Cmd>lua MiniSessions.restart()<CR>", desc = "Restart (Preserve Session)" },
+    },
   },
   {
     "nvim-mini/mini.visits",
