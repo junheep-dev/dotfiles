@@ -16,6 +16,19 @@ function _G.SnacksLazygitEdit(file, line)
   end)
 end
 
+-- Navigate out of a terminal window with <C-hjkl>. In a floating terminal there
+-- is nothing to move to, so pass the key through; in a split, move to the window
+-- in that direction. Same trick LazyVim uses.
+local function term_nav(dir)
+  ---@param self snacks.terminal
+  return function(self)
+    return self:is_floating() and "<c-" .. dir .. ">"
+      or vim.schedule(function()
+        vim.cmd.wincmd(dir)
+      end)
+  end
+end
+
 return {
   {
     "folke/snacks.nvim",
@@ -24,6 +37,16 @@ return {
     opts = {
       bigfile = { enabled = true },
       quickfile = { enabled = true },
+      terminal = {
+        win = {
+          keys = {
+            nav_h = { "<C-h>", term_nav("h"), desc = "Go to Left Window", expr = true, mode = "t" },
+            nav_j = { "<C-j>", term_nav("j"), desc = "Go to Lower Window", expr = true, mode = "t" },
+            nav_k = { "<C-k>", term_nav("k"), desc = "Go to Upper Window", expr = true, mode = "t" },
+            nav_l = { "<C-l>", term_nav("l"), desc = "Go to Right Window", expr = true, mode = "t" },
+          },
+        },
+      },
       lazygit = {
         -- Override the nvim-remote preset (new tab + float stays open) so `e`
         -- closes the float and opens the file in the current window. See
@@ -44,6 +67,38 @@ return {
           require("snacks").lazygit()
         end,
         desc = "Lazygit",
+      },
+      {
+        "<c-/>",
+        function()
+          require("snacks").terminal()
+        end,
+        desc = "Terminal",
+        mode = { "n", "t" },
+      },
+      {
+        "<c-_>",
+        function()
+          require("snacks").terminal()
+        end,
+        desc = "which_key_ignore",
+        mode = { "n", "t" },
+      },
+      {
+        "<leader>tt",
+        function()
+          require("snacks").terminal(nil, { win = { position = "right" } })
+        end,
+        desc = "Terminal (vsplit)",
+        mode = { "n", "t" },
+      },
+      {
+        "<leader>tT",
+        function()
+          require("snacks").terminal(nil, { win = { position = "bottom" } })
+        end,
+        desc = "Terminal (split)",
+        mode = { "n", "t" },
       },
     },
   },
