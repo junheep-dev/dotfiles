@@ -65,7 +65,7 @@ local function centerWindowWithSize(width, height)
 	local screen = win:screen()
 	local screenFrame = screen:frame()
 
-	-- 화면보다 크면 90% size로 조정
+	-- Shrink to 90% if larger than the screen
 	local adjustedWidth
 	local adjustedHeight
 
@@ -81,11 +81,11 @@ local function centerWindowWithSize(width, height)
 		adjustedHeight = height
 	end
 
-	-- 창을 배치할 좌표 계산
+	-- Compute the centered position
 	local x = screenFrame.x + (screenFrame.w - adjustedWidth) / 2
 	local y = screenFrame.y + (screenFrame.h - adjustedHeight) / 2
 
-	-- 창 크기 및 위치 설정
+	-- Apply size and position
 	win:setFrame({ x = x, y = y, w = adjustedWidth, h = adjustedHeight }, 0)
 end
 
@@ -93,12 +93,12 @@ hs.hotkey.bind({ "alt", "ctrl" }, "c", function()
 	centerWindowWithSize(1800, 1200)
 end)
 
--- Focus modes: 지정한 앱만 보이고 나머지 일반 앱은 전부 숨김
+-- Focus modes: show only the given apps, hide all other regular apps
 local DIA = "company.thebrowser.dia"
 local GHOSTTY = "com.mitchellh.ghostty"
 local ZOOM = "us.zoom.xos"
 
--- Dia 등 일부 Chromium 앱은 hide()를 거부 → System Events로 폴백
+-- Some Chromium apps (e.g. Dia) reject hide()/unhide() → fall back to System Events
 local function hide(app)
 	if not app:hide() then
 		hs.osascript.applescript(
@@ -107,17 +107,92 @@ local function hide(app)
 	end
 end
 
-local function focusMode(bundleIDs)
+local function show(app)
+	if not app:unhide() then
+		hs.osascript.applescript(
+			string.format([[tell application "System Events" to set visible of process "%s" to true]], app:name())
+		)
+	end
+end
+
+-- Lay out the focused window per display (with GAP padding):
+--   Built-in MacBook display → maximize (padding on all sides)
+--   External wide monitor → 80% width, centered, top/bottom padding
+local GAP = 4
+
+local function layoutWindow(win)
+	if not win then
+		return
+	end
+	local screen = win:screen()
+	if not screen then
+		return
+	end
+	local f = screen:frame()
+
+	if (screen:name() or ""):find("Built%-in") then
+		win:setFrame({ x = f.x + GAP, y = f.y + GAP, w = f.w - 2 * GAP, h = f.h - 2 * GAP }, 0)
+	else
+		local w = f.w * 0.8
+		win:setFrame({ x = f.x + (f.w - w) / 2, y = f.y + GAP, w = w, h = f.h - 2 * GAP }, 0)
+	end
+end
+
+-- Meeting layout: Dia on the left / Zoom meeting window on the right
+-- (external = 80% total, centered; MacBook = full width), keeping GAP
+local function layoutMeeting()
+	local diaApp = hs.application.get(DIA)
+	local zoomApp = hs.application.get(ZOOM)
+	if not diaApp or not zoomApp then
+		return
+	end
+
+	local diaWin = diaApp:mainWindow()
+	-- Zoom has separate home ("Zoom Workplace") / meeting ("Zoom Meeting") windows
+	-- → prefer the meeting window, fall back to the main one
+	local zoomWin
+	for _, w in ipairs(zoomApp:allWindows()) do
+		if (w:title() or ""):find("Meeting") then
+			zoomWin = w
+			break
+		end
+	end
+	zoomWin = zoomWin or zoomApp:mainWindow()
+	if not diaWin or not zoomWin then
+		return
+	end
+
+	local screen = hs.screen.mainScreen()
+	local f = screen:frame()
+
+	local regionW, left
+	if (screen:name() or ""):find("Built%-in") then
+		regionW = f.w - 2 * GAP
+		left = f.x + GAP
+	else
+		regionW = f.w * 0.8
+		left = f.x + (f.w - regionW) / 2
+	end
+
+	local eachW = (regionW - GAP) / 2
+	local top = f.y + GAP
+	local h = f.h - 2 * GAP
+
+	diaWin:setFrame({ x = left, y = top, w = eachW, h = h }, 0)
+	zoomWin:setFrame({ x = left + eachW + GAP, y = top, w = eachW, h = h }, 0)
+end
+
+local function focusMode(bundleIDs, layout)
 	local keep = {}
 	for _, id in ipairs(bundleIDs) do
 		keep[id] = true
 	end
 
-	-- 타겟 앱들 띄우고, 첫 번째를 frontmost로 확정
+	-- Show the target apps and make the first one frontmost
 	for _, id in ipairs(bundleIDs) do
 		local app = hs.application.get(id)
 		if app then
-			app:unhide()
+			show(app)
 		else
 			hs.application.launchOrFocusByBundleID(id)
 		end
@@ -127,26 +202,34 @@ local function focusMode(bundleIDs)
 		first:activate()
 	end
 
-	-- 나머지 숨기기 (frontmost가 확정됐으니 다시 안 올라옴)
+	-- Hide the rest (frontmost is fixed, so they won't resurface)
 	for _, app in ipairs(hs.application.runningApplications()) do
-		-- kind() == 1: Dock에 뜨는 일반 앱만 (메뉴바 상주 앱 등은 제외)
+		-- kind() == 1: only regular Dock apps (excludes menu-bar-only apps, etc.)
 		if app:kind() == 1 and not keep[app:bundleID()] then
 			hide(app)
 		end
 	end
+
+	-- Lay out the first app's window per display (slight delay since activate is async)
+	if layout and first then
+		hs.timer.doAfter(0.12, function()
+			layoutWindow(first:mainWindow())
+		end)
+	end
 end
 
--- browser: 브라우저만
+-- browser: browser only (with window layout)
 hs.hotkey.bind({ "alt" }, "1", function()
-	focusMode({ DIA })
+	focusMode({ DIA }, true)
 end)
 
--- code: 터미널만
+-- code: terminal only (with window layout)
 hs.hotkey.bind({ "alt" }, "2", function()
-	focusMode({ GHOSTTY })
+	focusMode({ GHOSTTY }, true)
 end)
 
--- meeting: 줌 + 브라우저
+-- meeting: Dia left / Zoom meeting window right, side by side
 hs.hotkey.bind({ "alt" }, "3", function()
 	focusMode({ ZOOM, DIA })
+	hs.timer.doAfter(0.15, layoutMeeting)
 end)
