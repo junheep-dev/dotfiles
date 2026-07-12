@@ -76,6 +76,22 @@ return {
         end,
         desc = "Delete Buffer (Force)",
       },
+      -- mini.bufremove only deletes a single buffer, so the bulk variants use
+      -- snacks.bufdelete (other = keep current, all = close everything).
+      {
+        "<leader>bo",
+        function()
+          require("snacks").bufdelete.other()
+        end,
+        desc = "Delete Other Buffers",
+      },
+      {
+        "<leader>ba",
+        function()
+          require("snacks").bufdelete.all()
+        end,
+        desc = "Delete All Buffers",
+      },
     },
   },
   {
