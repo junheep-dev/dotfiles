@@ -90,7 +90,6 @@ return {
           require("snacks").terminal(nil, { win = { position = "right" } })
         end,
         desc = "Terminal (vsplit)",
-        mode = { "n", "t" },
       },
       {
         "<leader>tT",
@@ -98,7 +97,6 @@ return {
           require("snacks").terminal(nil, { win = { position = "bottom" } })
         end,
         desc = "Terminal (split)",
-        mode = { "n", "t" },
       },
     },
   },
