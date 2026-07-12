@@ -69,8 +69,7 @@ map("n", "<leader>L", "<cmd>Lazy<cr>", { desc = "Lazy" })
 -- new file
 map("n", "<leader>fn", "<cmd>enew<cr>", { desc = "New File" })
 
--- explore/edit
-map("n", "<leader>ei", "<cmd>edit $MYVIMRC<cr>", { desc = "Init.lua" })
+-- quickfix / location list
 map("n", "<leader>eq", function()
   vim.cmd(vim.fn.getqflist({ winid = true }).winid ~= 0 and "cclose" or "copen")
 end, { desc = "Quickfix List" })
