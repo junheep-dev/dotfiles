@@ -25,6 +25,9 @@ return {
       cli = {
         win = {
           split = { width = 0.5 },
+          -- pin the terminal to its window so <C-o>/<C-i> (jumplist) can't
+          -- replace it with another buffer (snacks does this via its own fixbuf)
+          wo = { winfixbuf = true },
         },
         tools = {
           claude_continue = { cmd = { "claude", "--continue" } },
