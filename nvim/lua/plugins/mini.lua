@@ -259,7 +259,7 @@ return {
     opts = {},
     keys = {
       {
-        "<leader>un",
+        "<leader>en",
         function()
           require("mini.notify").show_history()
         end,
@@ -275,9 +275,6 @@ return {
     lazy = false,
     opts = {},
     keys = {
-      { "<leader><leader>", "<Cmd>Pick files<CR>", desc = "Files" },
-      { "<leader>,", "<Cmd>Pick buffers<CR>", desc = "Buffers" },
-      { "<leader>/", "<Cmd>Pick grep_live<CR>", desc = "Grep Live" },
       { "<leader>ff", "<Cmd>Pick files<CR>", desc = "Files" },
       { "<leader>fg", "<Cmd>Pick grep_live<CR>", desc = "Grep Live" },
       { "<leader>fG", '<Cmd>Pick grep pattern="<cword>"<CR>', desc = "Grep Current Word" },
@@ -380,15 +377,13 @@ return {
         clues = {
           { mode = "n", keys = "<leader>a", desc = "+ai" },
           { mode = "n", keys = "<leader>b", desc = "+buffer" },
-          { mode = "n", keys = "<leader>c", desc = "+code" },
           { mode = "n", keys = "<leader>e", desc = "+explore" },
           { mode = "n", keys = "<leader>f", desc = "+file" },
           { mode = "n", keys = "<leader>g", desc = "+git" },
           { mode = "n", keys = "<leader>l", desc = "+language" },
           { mode = "n", keys = "<leader>o", desc = "+other" },
           { mode = "n", keys = "<leader>s", desc = "+session" },
-          { mode = "n", keys = "<leader>t", desc = "+tabs" },
-          { mode = "n", keys = "<leader>u", desc = "+ui" },
+          { mode = "n", keys = "<leader>t", desc = "+terminal" },
           { mode = "n", keys = "<leader>v", desc = "+visits" },
           miniclue.gen_clues.square_brackets(),
           miniclue.gen_clues.g(),

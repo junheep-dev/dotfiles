@@ -41,27 +41,6 @@ return {
         mode = { "n", "t", "i", "x" },
       },
       {
-        "<leader>aa",
-        function()
-          require("sidekick.cli").toggle()
-        end,
-        desc = "Sidekick Toggle CLI",
-      },
-      {
-        "<leader>as",
-        function()
-          require("sidekick.cli").select({ filter = { installed = true } })
-        end,
-        desc = "Select CLI",
-      },
-      {
-        "<leader>ad",
-        function()
-          require("sidekick.cli").close()
-        end,
-        desc = "Detach CLI Session",
-      },
-      {
         "<leader>at",
         function()
           require("sidekick.cli").send({ msg = "{this}" })
@@ -91,20 +70,6 @@ return {
         end,
         mode = { "n", "x" },
         desc = "Select Prompt",
-      },
-      {
-        "<leader>ac",
-        function()
-          require("sidekick.cli").toggle({ name = "claude", focus = true })
-        end,
-        desc = "Toggle Claude",
-      },
-      {
-        "<leader>aC",
-        function()
-          require("sidekick.cli").toggle({ name = "claude_continue", focus = true })
-        end,
-        desc = "Toggle Claude Continue",
       },
     },
   },
