@@ -115,10 +115,11 @@ local function show(app)
 	end
 end
 
--- Lay out the focused window per display (with GAP padding):
---   Built-in MacBook display → maximize (padding on all sides)
---   External wide monitor → 80% width, centered, top/bottom padding
+-- Lay out the focused window based on the display's aspect ratio (with GAP padding):
+--   Ultrawide (21:9+) → 80% width, centered
+--   Otherwise (built-in, 16:9 external) → maximize
 local GAP = 4
+local ULTRAWIDE_RATIO = 2.0
 
 local function layoutWindow(win)
 	if not win then
@@ -130,16 +131,22 @@ local function layoutWindow(win)
 	end
 	local f = screen:frame()
 
-	if (screen:name() or ""):find("Built%-in") then
-		win:setFrame({ x = f.x + GAP, y = f.y + GAP, w = f.w - 2 * GAP, h = f.h - 2 * GAP }, 0)
-	else
+	if f.w / f.h > ULTRAWIDE_RATIO then
 		local w = f.w * 0.8
 		win:setFrame({ x = f.x + (f.w - w) / 2, y = f.y + GAP, w = w, h = f.h - 2 * GAP }, 0)
+	else
+		win:setFrame({ x = f.x + GAP, y = f.y + GAP, w = f.w - 2 * GAP, h = f.h - 2 * GAP }, 0)
 	end
 end
 
+-- Apply the standard layout to the focused window (any app, anywhere).
+-- Overrides Rectangle's default Maximize on the same chord.
+hs.hotkey.bind({ "alt", "ctrl" }, "return", function()
+	layoutWindow(hs.window.focusedWindow())
+end)
+
 -- Meeting layout: Dia on the left / Zoom meeting window on the right
--- (external = 80% total, centered; MacBook = full width), keeping GAP
+-- (ultrawide = 80% total, centered; otherwise = full width), keeping GAP
 local function layoutMeeting()
 	local diaApp = hs.application.get(DIA)
 	local zoomApp = hs.application.get(ZOOM)
@@ -166,12 +173,12 @@ local function layoutMeeting()
 	local f = screen:frame()
 
 	local regionW, left
-	if (screen:name() or ""):find("Built%-in") then
-		regionW = f.w - 2 * GAP
-		left = f.x + GAP
-	else
+	if f.w / f.h > ULTRAWIDE_RATIO then
 		regionW = f.w * 0.8
 		left = f.x + (f.w - regionW) / 2
+	else
+		regionW = f.w - 2 * GAP
+		left = f.x + GAP
 	end
 
 	local eachW = (regionW - GAP) / 2
