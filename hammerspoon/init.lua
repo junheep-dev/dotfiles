@@ -98,20 +98,40 @@ local DIA = "company.thebrowser.dia"
 local GHOSTTY = "com.mitchellh.ghostty"
 local ZOOM = "us.zoom.xos"
 
--- Some Chromium apps (e.g. Dia) reject hide()/unhide() → fall back to System Events
-local function hide(app)
-	if not app:hide() then
-		hs.osascript.applescript(
-			string.format([[tell application "System Events" to set visible of process "%s" to false]], app:name())
-		)
+-- Show an app instantly: unhide, then raise its main window via AX. The AX raise
+-- reveals Chromium apps (e.g. Dia) that ignore unhide(), so we never shell out to
+-- osascript (which costs 100–300ms per call and made switching feel sluggish).
+local function show(app)
+	app:unhide()
+	local ax = hs.axuielement.applicationElement(app)
+	local win = ax and ax:attributeValue("AXMainWindow")
+	if win then
+		win:performAction("AXRaise")
 	end
 end
 
-local function show(app)
-	if not app:unhide() then
-		hs.osascript.applescript(
-			string.format([[tell application "System Events" to set visible of process "%s" to true]], app:name())
-		)
+local function hideViaSystemEvents(app)
+	hs.osascript.applescript(
+		string.format([[tell application "System Events" to set visible of process "%s" to false]], app:name())
+	)
+end
+
+-- Apps that ignore both hide() and the AX hidden attribute (Chromium-based, e.g. Dia).
+-- Hide these via System Events straight away so there's no retry delay.
+local STUBBORN_HIDE = { [DIA] = true }
+
+-- Hide an app instantly. Normal apps use app:hide() (in-process, no osascript); stubborn
+-- apps go straight to System Events. As a safety net, any app that's still visible shortly
+-- after gets one deferred System Events hide — off the visible transition path.
+local function hide(app)
+	if STUBBORN_HIDE[app:bundleID()] then
+		hideViaSystemEvents(app)
+	elseif not app:hide() then
+		hs.timer.doAfter(0.15, function()
+			if not app:isHidden() then
+				hideViaSystemEvents(app)
+			end
+		end)
 	end
 end
 
