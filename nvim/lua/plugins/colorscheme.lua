@@ -14,7 +14,6 @@ local transparent_groups = {
   "NormalFloat",
   "FloatBorder",
   "FloatTitle",
-  "Pmenu",
   "SignColumn",
   "LineNr",
   "CursorLineNr",

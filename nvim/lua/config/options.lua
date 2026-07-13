@@ -69,7 +69,7 @@ opt.grepformat = "%f:%l:%c:%m"
 -- Completion & command-line
 opt.completeopt = "menu,menuone,noselect"
 opt.pumheight = 10 -- maximum number of entries in a popup
-opt.pumblend = 10 -- popup blend
+opt.pumblend = 10 -- subtle popup blend; Pmenu bg is opaque so text can't bleed through
 
 -- Windows & splits
 opt.splitbelow = true -- put new windows below current
