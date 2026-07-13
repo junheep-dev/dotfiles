@@ -1,5 +1,8 @@
 -- Loaded before lazy.nvim startup (see config.lazy).
 
+-- cache compiled Lua modules for faster startup
+vim.loader.enable()
+
 vim.g.mapleader = " "
 vim.g.maplocalleader = "\\"
 
