@@ -34,12 +34,12 @@ opt.sidescrolloff = 8 -- keep 8 columns visible left/right of the cursor
 opt.smoothscroll = true -- scroll one screen line at a time on wrapped lines
 opt.list = true -- show some invisible characters (tabs...)
 opt.fillchars = {
-	foldopen = "\u{f47c}",
-	foldclose = "\u{f460}",
-	fold = " ",
-	foldsep = " ",
-	diff = "╱",
-	eob = " ",
+  foldopen = "\u{f47c}",
+  foldclose = "\u{f460}",
+  fold = " ",
+  foldsep = " ",
+  diff = "╱",
+  eob = " ",
 }
 -- opt.statuscolumn -- TODO: set via snacks.nvim statuscolumn once snacks is added
 
