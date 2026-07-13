@@ -406,6 +406,18 @@ return {
           delay = 200,
         },
       })
+
+      -- mini.clue only installs its triggers in listed buffers, so leader (and
+      -- other prefixes) never fired in the sidekick / snacks terminals — both
+      -- are unlisted scratch buffers. Force-enable triggers there. Only normal
+      -- and visual modes are hooked, so terminal-mode typing is untouched.
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = { "sidekick_terminal", "snacks_terminal" },
+        group = vim.api.nvim_create_augroup("junheep_clue_terminals", { clear = true }),
+        callback = function(ev)
+          miniclue.enable_buf_triggers(ev.buf)
+        end,
+      })
     end,
   },
 }
