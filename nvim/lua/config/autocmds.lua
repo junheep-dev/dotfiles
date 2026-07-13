@@ -108,11 +108,17 @@ vim.api.nvim_create_autocmd("FileType", {
   end,
 })
 
--- mini.git output splits (:Git status/log/diff/show …) — matched by event, not filetype
-vim.api.nvim_create_autocmd("User", {
+-- close mini.git scratch splits with <q>: :Git diff/log/show, show_at_cursor
+-- (commit-show / range-history), AND show_diff_source. All are named minigit://…
+-- but their filetype varies (git/diff, or the source file's type like lua for
+-- show_diff_source), so match by name on BufWinEnter, not by filetype. All such
+-- buffers are scratch (buflisted=false, nofile) — never the real editable file.
+vim.api.nvim_create_autocmd("BufWinEnter", {
   group = augroup("close_minigit_with_q"),
-  pattern = "MiniGitCommandSplit",
   callback = function(event)
+    if not vim.api.nvim_buf_get_name(event.buf):match("^minigit://") then
+      return
+    end
     vim.keymap.set("n", "q", "<cmd>close<cr>", {
       buffer = event.buf,
       silent = true,
