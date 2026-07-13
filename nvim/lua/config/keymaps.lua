@@ -63,6 +63,9 @@ map("i", "<Tab>", function()
   return "<Tab>"
 end, { expr = true, desc = "Smart Tab" })
 
+-- switch to last (alternate) buffer
+map("n", "<leader>`", "<cmd>b#<cr>", { desc = "Switch to Other Buffer" })
+
 -- lazy
 map("n", "<leader>L", "<cmd>Lazy<cr>", { desc = "Lazy" })
 

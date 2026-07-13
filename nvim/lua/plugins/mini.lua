@@ -287,6 +287,7 @@ return {
     keys = {
       { "<leader><leader>", "<Cmd>Pick files<CR>", desc = "Files" },
       { "<leader>/", "<Cmd>Pick grep_live<CR>", desc = "Grep Live" },
+      { "<leader>,", "<Cmd>Pick buffers<CR>", desc = "Buffers" },
       { "<leader>ff", "<Cmd>Pick files<CR>", desc = "Files" },
       { "<leader>fg", "<Cmd>Pick grep_live<CR>", desc = "Grep Live" },
       { "<leader>fG", '<Cmd>Pick grep pattern="<cword>"<CR>', desc = "Grep Current Word" },
