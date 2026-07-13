@@ -22,6 +22,26 @@ map("n", "<C-S-Down>", "<cmd>resize -2<cr>", { desc = "Decrease Window Height" }
 map("n", "<C-S-Left>", "<cmd>vertical resize -2<cr>", { desc = "Decrease Window Width" })
 map("n", "<C-S-Right>", "<cmd>vertical resize +2<cr>", { desc = "Increase Window Width" })
 
+-- smart <C-w>o: nvim 0.12's :only closes floats/terminals too, so close only
+-- ordinary split windows and keep floats, terminals, and snacks/sidekick panes.
+map("n", "<C-w>o", function()
+  local cur = vim.api.nvim_get_current_win()
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if win ~= cur then
+      local buf = vim.api.nvim_win_get_buf(win)
+      local is_float = vim.api.nvim_win_get_config(win).relative ~= ""
+      local ft = vim.bo[buf].filetype
+      local keep = is_float
+        or vim.bo[buf].buftype == "terminal"
+        or ft:match("^snacks_")
+        or ft:match("sidekick")
+      if not keep then
+        pcall(vim.api.nvim_win_close, win, false)
+      end
+    end
+  end
+end, { desc = "Only (keep floats/terminals)" })
+
 -- clear search with <esc>
 map({ "i", "n", "s" }, "<esc>", function()
   vim.cmd("noh")
