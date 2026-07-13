@@ -92,6 +92,35 @@ vim.api.nvim_create_autocmd({ "BufWinEnter", "TermOpen" }, {
 	end,
 })
 
+-- close some filetypes with <q>
+vim.api.nvim_create_autocmd("FileType", {
+	group = augroup("close_with_q"),
+	pattern = { "help", "man", "qf", "checkhealth" },
+	callback = function(event)
+		vim.bo[event.buf].buflisted = false
+		vim.schedule(function()
+			vim.keymap.set("n", "q", "<cmd>close<cr>", {
+				buffer = event.buf,
+				silent = true,
+				desc = "Quit buffer",
+			})
+		end)
+	end,
+})
+
+-- mini.git output splits (:Git status/log/diff/show …) — matched by event, not filetype
+vim.api.nvim_create_autocmd("User", {
+	group = augroup("close_minigit_with_q"),
+	pattern = "MiniGitCommandSplit",
+	callback = function(event)
+		vim.keymap.set("n", "q", "<cmd>close<cr>", {
+			buffer = event.buf,
+			silent = true,
+			desc = "Quit buffer",
+		})
+	end,
+})
+
 -- detect Hugo go templates in html files
 vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
 	group = augroup("hugo_gotmpl"),
