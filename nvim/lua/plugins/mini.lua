@@ -6,13 +6,7 @@ return {
     "nvim-mini/mini.diff",
     version = "*",
     lazy = false,
-    opts = {
-      -- show hunks as colored signs in the signcolumn (default is 'number',
-      -- which colors line numbers instead); gitsigns-style bar for add/change
-      view = {
-        style = "sign",
-      },
-    },
+    opts = {},
     keys = {
       {
         "<leader>go",
