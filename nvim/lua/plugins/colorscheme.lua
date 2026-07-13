@@ -75,7 +75,23 @@ return {
   { "folke/tokyonight.nvim", lazy = true },
   { "catppuccin/nvim", name = "catppuccin", lazy = true },
   { "projekt0n/github-nvim-theme", lazy = true },
-  { "sainnhe/gruvbox-material", lazy = true },
+  {
+    "sainnhe/gruvbox-material",
+    lazy = true,
+    config = function()
+      -- The default grey Visual (bg3 #3c3836) is too dim on the hard bg. Bump it
+      -- to #504945 -- the hard palette's own bg5 -- via a ColorScheme autocmd,
+      -- since applying the colorscheme resets highlights afterwards.
+      -- pattern-guarded so only gruvbox-material is affected.
+      vim.api.nvim_create_autocmd("ColorScheme", {
+        group = vim.api.nvim_create_augroup("gruvbox_visual", { clear = true }),
+        pattern = "gruvbox-material",
+        callback = function()
+          vim.api.nvim_set_hl(0, "Visual", { bg = "#504945" })
+        end,
+      })
+    end,
+  },
   { "rebelot/kanagawa.nvim", lazy = true },
 
   -- Manager: a local "plugin" (config dir) that applies the active theme on
