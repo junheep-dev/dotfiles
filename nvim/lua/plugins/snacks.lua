@@ -44,6 +44,19 @@ return {
             nav_j = { "<C-j>", term_nav("j"), desc = "Go to Lower Window", expr = true, mode = "t" },
             nav_k = { "<C-k>", term_nav("k"), desc = "Go to Upper Window", expr = true, mode = "t" },
             nav_l = { "<C-l>", term_nav("l"), desc = "Go to Right Window", expr = true, mode = "t" },
+            -- Enter normal mode in one keystroke, like the sidekick terminal.
+            -- snacks' default is double-<esc>, but that is an expr mapping that
+            -- calls stopinsert; stopinsert deferred inside an expr mapping leaves
+            -- you in terminal mode until the next key, which then gets swallowed.
+            -- A plain (non-expr) stopinsert switches to normal mode immediately.
+            normal_mode = {
+              "<C-q>",
+              function()
+                vim.cmd("stopinsert")
+              end,
+              desc = "Enter normal mode",
+              mode = "t",
+            },
           },
         },
       },
