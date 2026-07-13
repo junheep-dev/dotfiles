@@ -34,6 +34,7 @@ return {
     lazy = false,
     priority = 1000,
     opts = {
+      nes = { enable = false },
       bigfile = { enabled = true },
       quickfile = { enabled = true },
       terminal = {
