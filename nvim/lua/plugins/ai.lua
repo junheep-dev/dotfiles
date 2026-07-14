@@ -34,8 +34,8 @@ _G.SidekickFloat = {}
 -- Two size presets: the default right sidebar and a near-full reading view.
 -- full shares the sidebar's height/row so switching only changes the width.
 SidekickFloat.presets = {
-  sidebar = { width = 0.4, height = 0.92, col = 0.98, row = 0.4 },
-  full = { width = 0.92, height = 0.92, col = 0.5, row = 0.4 },
+  sidebar = { width = 0.4, height = 0.92, col = 0.98, row = 0.3 },
+  full = { width = 0.92, height = 0.92, col = 0.5, row = 0.3 },
 }
 
 -- Recompute the open float's geometry from the current config fractions. Also
@@ -249,7 +249,7 @@ return {
           -- 1=flush right); width/height are editor fractions. border makes it
           -- readable and surfaces the " Sidekick " title (a minimal window
           -- hides the title without one).
-          float = { border = "rounded", width = 0.4, height = 0.92, col = 0.98, row = 0.4 },
+          float = { border = "rounded", width = 0.4, height = 0.92, col = 0.98, row = 0.3 },
           -- Show the running tool in the float border title (e.g. "Sidekick ·
           -- Claude Code" instead of a static " Sidekick "). Runs per-terminal at
           -- init on the snapshot open_win reads, so each tool gets its own title.
@@ -279,14 +279,6 @@ return {
     },
     keys = {
       {
-        -- Sidekick's cross-mode control cluster lives on Ctrl+punctuation
-        -- (<c-.> toggle, <c-;> focus, <c-,> layout, <c-'> shape). These need a
-        -- terminal that sends the kitty keyboard protocol (Ghostty/kitty/WezTerm);
-        -- plain tmux/SSH/Terminal.app may not deliver them. <c-.> is sidekick's
-        -- own documented default; it stays available in every mode as the summon
-        -- key, while the others are n+t only (editor-normal + inside the CLI) —
-        -- the float is controlled either from the editor while visible or from
-        -- within the terminal, never mid-insert in a code buffer.
         "<c-.>",
         function()
           require("sidekick.cli").toggle({ filter = { installed = true } })
@@ -300,6 +292,13 @@ return {
           require("sidekick.cli").select({ filter = { installed = true } })
         end,
         desc = "Select CLI",
+      },
+      {
+        "<leader>ad",
+        function()
+          require("sidekick.cli").close()
+        end,
+        desc = "Detach a CLI Session",
       },
       {
         "<c-,>",
