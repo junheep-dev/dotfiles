@@ -90,3 +90,4 @@ opt.formatoptions = "jcroqlnt" -- tcqj
 
 -- Misc
 opt.spelllang = { "en", "cjk" } -- en + cjk so CJK text isn't flagged as misspelled
+opt.spelloptions = "camel"
