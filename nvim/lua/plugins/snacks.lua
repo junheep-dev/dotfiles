@@ -88,14 +88,14 @@ return {
         function()
           require("snacks").terminal(nil, { win = { position = "right" } })
         end,
-        desc = "Terminal (vsplit)",
+        desc = "Terminal (Vertical)",
       },
       {
         "<leader>tT",
         function()
           require("snacks").terminal(nil, { win = { position = "bottom" } })
         end,
-        desc = "Terminal (split)",
+        desc = "Terminal (Horizontal)",
       },
     },
   },

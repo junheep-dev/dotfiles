@@ -61,14 +61,14 @@ return {
         function()
           require("mini.bufremove").delete(0, false)
         end,
-        desc = "Delete Buffer",
+        desc = "Delete",
       },
       {
         "<leader>bD",
         function()
           require("mini.bufremove").delete(0, true)
         end,
-        desc = "Delete Buffer (Force)",
+        desc = "Delete!",
       },
       -- mini.bufremove only deletes a single buffer, so closing every other
       -- buffer uses snacks.bufdelete instead.
@@ -82,9 +82,16 @@ return {
       {
         "<leader>bs",
         function()
-          vim.api.nvim_win_set_buf(0, vim.api.nvim_create_buf(true, true))
+          local buf = vim.api.nvim_create_buf(true, true)
+          vim.api.nvim_win_set_buf(0, buf)
+          -- `q` here deletes the buffer instead of `:close`: this replaces the
+          -- current window's buffer rather than opening a split, so closing
+          -- the window would quit Neovim if it's the only one left
+          vim.keymap.set("n", "q", function()
+            require("mini.bufremove").delete(buf, false)
+          end, { buffer = buf, desc = "Close Scratch Buffer" })
         end,
-        desc = "Scratch Buffer",
+        desc = "Scratch",
       },
     },
   },
@@ -171,86 +178,27 @@ return {
         function()
           vim.ui.input({ prompt = "Session name: " }, require("mini.sessions").write)
         end,
-        desc = "New Session",
+        desc = "New",
       },
       {
         "<leader>sl",
         "<Cmd>lua MiniSessions.write(MiniSessions.config.file)<CR>",
         desc = "Write Local Session (autoload)",
       },
-      { "<leader>sw", "<Cmd>lua MiniSessions.write()<CR>", desc = "Write Current Session" },
-      { "<leader>sr", '<Cmd>lua MiniSessions.select("read")<CR>', desc = "Read Session" },
-      { "<leader>sd", '<Cmd>lua MiniSessions.select("delete")<CR>', desc = "Delete Session" },
-      { "<leader>sR", "<Cmd>lua MiniSessions.restart()<CR>", desc = "Restart (Preserve Session)" },
+      { "<leader>sw", "<Cmd>lua MiniSessions.write()<CR>", desc = "Write Current" },
+      { "<leader>sr", '<Cmd>lua MiniSessions.select("read")<CR>', desc = "Read" },
+      { "<leader>sd", '<Cmd>lua MiniSessions.select("delete")<CR>', desc = "Delete" },
+      { "<leader>sR", "<Cmd>lua MiniSessions.restart()<CR>", desc = "Restart" },
     },
   },
   {
     "nvim-mini/mini.visits",
     version = "*",
+    -- load on startup so visit frequency/recency tracking starts from the
+    -- very first file opened, not just after `fv`/`fV` (in mini.extra's keys,
+    -- grouped with the rest of the picker keymaps) first trigger it
     lazy = false,
     opts = {},
-    keys = {
-      {
-        "<leader>vc",
-        function()
-          local sort_latest = require("mini.visits").gen_sort.default({ recency_weight = 1 })
-          require("mini.extra").pickers.visit_paths(
-            { cwd = "", filter = "core", sort = sort_latest },
-            { source = { name = "Core Visits (All)" } }
-          )
-        end,
-        desc = "Core Visits (All)",
-      },
-      {
-        "<leader>vC",
-        function()
-          local sort_latest = require("mini.visits").gen_sort.default({ recency_weight = 1 })
-          require("mini.extra").pickers.visit_paths(
-            { cwd = nil, filter = "core", sort = sort_latest },
-            { source = { name = "Core Visits (Cwd)" } }
-          )
-        end,
-        desc = "Core Visits (Cwd)",
-      },
-      {
-        "<leader>vv",
-        function()
-          require("mini.visits").add_label("core")
-        end,
-        desc = "Add Core Label",
-      },
-      {
-        "<leader>vV",
-        function()
-          require("mini.visits").remove_label("core")
-        end,
-        desc = "Remove Core Label",
-      },
-      {
-        "<leader>vl",
-        function()
-          require("mini.visits").add_label()
-        end,
-        desc = "Add Label",
-      },
-      {
-        "<leader>vL",
-        function()
-          require("mini.visits").remove_label()
-        end,
-        desc = "Remove Label",
-      },
-      {
-        "<leader>fv",
-        '<Cmd>Pick visit_paths cwd=""<CR>',
-        desc = "Visit Paths (All)",
-      },
-      {
-        "<leader>fV",
-        "<Cmd>Pick visit_paths<CR>",
-        desc = "Visit Paths (Cwd)",
-      },
-    },
   },
   {
     "nvim-mini/mini.input",
@@ -283,7 +231,7 @@ return {
         function()
           require("mini.notify").show_history()
         end,
-        desc = "Notification History",
+        desc = "Notifications",
       },
     },
   },
@@ -297,7 +245,6 @@ return {
     keys = {
       { "<leader><leader>", "<Cmd>Pick files<CR>", desc = "Files" },
       { "<leader>/", "<Cmd>Pick grep_live<CR>", desc = "Grep Live" },
-      { "<leader>,", "<Cmd>Pick buffers<CR>", desc = "Buffers" },
       { "<leader>ff", "<Cmd>Pick files<CR>", desc = "Files" },
       { "<leader>fg", "<Cmd>Pick grep_live<CR>", desc = "Grep Live" },
       { "<leader>fG", '<Cmd>Pick grep pattern="<cword>"<CR>', desc = "Grep Current Word" },
@@ -313,7 +260,7 @@ return {
     keys = {
       { "<leader>fd", '<Cmd>Pick diagnostic scope="all"<CR>', desc = "Diagnostic Workspace" },
       { "<leader>fD", '<Cmd>Pick diagnostic scope="current"<CR>', desc = "Diagnostic Buffer" },
-      { "<leader>fs", '<Cmd>Pick lsp scope="workspace_symbol_live"<CR>', desc = "Symbols Workspace" },
+      { "<leader>fs", '<Cmd>Pick lsp scope="workspace_symbol_live"<CR>', desc = "Symbols Workspace (Live)" },
       { "<leader>fS", '<Cmd>Pick lsp scope="document_symbol"<CR>', desc = "Symbols Document" },
       { "<leader>fR", '<Cmd>Pick lsp scope="references"<CR>', desc = "References (LSP)" },
       { "<leader>fa", '<Cmd>Pick git_hunks scope="staged"<CR>', desc = "Added Hunks (All)" },
@@ -327,6 +274,8 @@ return {
       { "<leader>fH", "<Cmd>Pick hl_groups<CR>", desc = "Highlight Groups" },
       { "<leader>fl", '<Cmd>Pick buf_lines scope="all"<CR>', desc = "Lines (All)" },
       { "<leader>fL", '<Cmd>Pick buf_lines scope="current"<CR>', desc = "Lines (Buf)" },
+      { "<leader>fv", '<Cmd>Pick visit_paths cwd=""<CR>', desc = "Visit Paths (All)" },
+      { "<leader>fV", "<Cmd>Pick visit_paths<CR>", desc = "Visit Paths (Cwd)" },
     },
   },
   {
@@ -348,14 +297,14 @@ return {
         function()
           require("mini.files").open(vim.api.nvim_buf_get_name(0))
         end,
-        desc = "Explorer (current file)",
+        desc = "File Directory",
       },
       {
         "<leader>ed",
         function()
           require("mini.files").open(vim.uv.cwd())
         end,
-        desc = "Explorer (cwd)",
+        desc = "Directory",
       },
     },
     config = function()
@@ -431,7 +380,6 @@ return {
           { mode = "n", keys = "<leader>o", desc = "+other" },
           { mode = "n", keys = "<leader>s", desc = "+session" },
           { mode = "n", keys = "<leader>t", desc = "+terminal" },
-          { mode = "n", keys = "<leader>v", desc = "+visits" },
           miniclue.gen_clues.square_brackets(),
           miniclue.gen_clues.g(),
           miniclue.gen_clues.z(),

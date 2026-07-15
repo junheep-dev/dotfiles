@@ -81,7 +81,7 @@ map({ "i", "n" }, "<Tab>", function()
 end, { expr = true, desc = "Smart Tab" })
 
 -- switch to last (alternate) buffer
-map("n", "<leader>ba", "<cmd>b#<cr>", { desc = "Alternate Buffer" })
+map("n", "<leader>ba", "<cmd>b#<cr>", { desc = "Alternate" })
 
 -- lazy
 map("n", "<leader>L", "<cmd>Lazy<cr>", { desc = "Lazy" })
@@ -92,10 +92,10 @@ map("n", "<leader>fn", "<cmd>enew<cr>", { desc = "New File" })
 -- quickfix / location list
 map("n", "<leader>eq", function()
   vim.cmd(vim.fn.getqflist({ winid = true }).winid ~= 0 and "cclose" or "copen")
-end, { desc = "Quickfix List" })
+end, { desc = "Quickfix" })
 map("n", "<leader>eQ", function()
   vim.cmd(vim.fn.getloclist(0, { winid = true }).winid ~= 0 and "lclose" or "lopen")
-end, { desc = "Location List" })
+end, { desc = "Locations" })
 
 -- diagnostics
 local diagnostic_goto = function(next, severity)
@@ -107,7 +107,7 @@ local diagnostic_goto = function(next, severity)
     })
   end
 end
-map("n", "<leader>ld", vim.diagnostic.open_float, { desc = "Line Diagnostics" })
+map("n", "<leader>ld", vim.diagnostic.open_float, { desc = "Diagnostic Popup" })
 map("n", "]e", diagnostic_goto(true, "ERROR"), { desc = "Next Error" })
 map("n", "[e", diagnostic_goto(false, "ERROR"), { desc = "Prev Error" })
 map("n", "]w", diagnostic_goto(true, "WARN"), { desc = "Next Warning" })
