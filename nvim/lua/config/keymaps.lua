@@ -65,7 +65,7 @@ map("x", ">", ">gv")
 -- smart <Tab>: snippet tabstop → sidekick NES → Copilot accept → literal Tab.
 -- Not tied to any one plugin; the require()s are deferred to press time, so
 -- lazy.nvim loads sidekick/copilot on first use (dependency-free at definition).
-map("i", "<Tab>", function()
+map({ "i", "n" }, "<Tab>", function()
   if vim.snippet.active({ direction = 1 }) then
     vim.snippet.jump(1)
     return ""
