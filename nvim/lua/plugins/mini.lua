@@ -70,8 +70,8 @@ return {
         end,
         desc = "Delete Buffer (Force)",
       },
-      -- mini.bufremove only deletes a single buffer, so the bulk variants use
-      -- snacks.bufdelete (other = keep current, all = close everything).
+      -- mini.bufremove only deletes a single buffer, so closing every other
+      -- buffer uses snacks.bufdelete instead.
       {
         "<leader>bo",
         function()
@@ -80,11 +80,11 @@ return {
         desc = "Delete Other Buffers",
       },
       {
-        "<leader>ba",
+        "<leader>bs",
         function()
-          require("snacks").bufdelete.all()
+          vim.api.nvim_win_set_buf(0, vim.api.nvim_create_buf(true, true))
         end,
-        desc = "Delete All Buffers",
+        desc = "Scratch Buffer",
       },
     },
   },
