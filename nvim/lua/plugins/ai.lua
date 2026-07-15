@@ -337,11 +337,29 @@ return {
       {
         -- Toggle focus in/out of the CLI. Works from terminal mode too, so you
         -- can drop back to the editor and jump back in without reaching for the
-        -- <leader> maps. focus() blurs when the terminal is focused, focuses it
-        -- otherwise.
+        -- <leader> maps. Reimplements sidekick.cli.focus() instead of calling it
+        -- directly: that version always startinsert()s on focus, forcing insert
+        -- mode even if the terminal was last left in normal mode. Just moving
+        -- the current window (like <C-h>/<C-l> window nav already does) lets the
+        -- terminal's own WinEnter autocmd restore whichever mode it was left in.
         "<c-;>",
         function()
-          require("sidekick.cli").focus({ filter = { installed = true } })
+          require("sidekick.cli.state").with(function(state)
+            local t = state and state.terminal
+            if not t then
+              return
+            end
+            if t:is_focused() then
+              t:blur()
+            elseif t:is_running() then
+              vim.api.nvim_set_current_win(t.win)
+            end
+          end, {
+            attach = true,
+            filter = { installed = true },
+            focus = false,
+            show = true,
+          })
         end,
         desc = "Sidekick Focus Toggle",
         mode = { "n", "t" },
