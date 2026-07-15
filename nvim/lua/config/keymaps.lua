@@ -31,10 +31,7 @@ map("n", "<C-w>o", function()
       local buf = vim.api.nvim_win_get_buf(win)
       local is_float = vim.api.nvim_win_get_config(win).relative ~= ""
       local ft = vim.bo[buf].filetype
-      local keep = is_float
-        or vim.bo[buf].buftype == "terminal"
-        or ft:match("^snacks_")
-        or ft:match("sidekick")
+      local keep = is_float or vim.bo[buf].buftype == "terminal" or ft:match("^snacks_") or ft:match("sidekick")
       if not keep then
         pcall(vim.api.nvim_win_close, win, false)
       end
