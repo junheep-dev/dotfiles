@@ -301,6 +301,20 @@ return {
         desc = "Detach a CLI Session",
       },
       {
+        "<leader>ac",
+        function()
+          require("sidekick.cli").toggle({ name = "claude", focus = true })
+        end,
+        desc = "Sidekick Toggle Claude",
+      },
+      {
+        "<leader>aC",
+        function()
+          require("sidekick.cli").toggle({ name = "claude_continue", focus = true })
+        end,
+        desc = "Sidekick Start Claude --continue",
+      },
+      {
         "<c-,>",
         function()
           require("sidekick.cli.state").with(function(state)
