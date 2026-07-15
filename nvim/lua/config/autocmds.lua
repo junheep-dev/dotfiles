@@ -69,6 +69,16 @@ vim.api.nvim_create_autocmd("FileType", {
   end,
 })
 
+-- don't auto-wrap comments, and don't insert comment leader after `o`/`O`;
+-- always override whatever filetype plugins set
+vim.api.nvim_create_autocmd("FileType", {
+  group = augroup("formatoptions"),
+  pattern = "*",
+  callback = function()
+    vim.opt_local.formatoptions:remove({ "c", "o" })
+  end,
+})
+
 -- auto create dir when saving a file, in case some intermediate directory does not exist
 vim.api.nvim_create_autocmd("BufWritePre", {
   group = augroup("auto_create_dir"),
