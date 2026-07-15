@@ -159,7 +159,12 @@ return {
     version = "*",
     -- load on startup so autowrite persists the active session on exit
     lazy = false,
-    opts = {},
+    opts = {
+      -- auto-load a project's local session (cwd's Session.vim) when opening
+      -- nvim without file arguments there; local sessions are still only
+      -- ever created manually, via <leader>sl
+      autoread = true,
+    },
     keys = {
       {
         "<leader>sn",
@@ -167,6 +172,11 @@ return {
           vim.ui.input({ prompt = "Session name: " }, require("mini.sessions").write)
         end,
         desc = "New Session",
+      },
+      {
+        "<leader>sl",
+        "<Cmd>lua MiniSessions.write(MiniSessions.config.file)<CR>",
+        desc = "Write Local Session (autoload)",
       },
       { "<leader>sw", "<Cmd>lua MiniSessions.write()<CR>", desc = "Write Current Session" },
       { "<leader>sr", '<Cmd>lua MiniSessions.select("read")<CR>', desc = "Read Session" },
