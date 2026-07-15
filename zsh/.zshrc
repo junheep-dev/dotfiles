@@ -55,3 +55,6 @@ bindkey "^[[A" history-search-backward
 bindkey "^[[B" history-search-forward
 
 eval "$(fzf --zsh)"
+
+# ripgrep: search hidden files (dotfiles) by default
+export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"

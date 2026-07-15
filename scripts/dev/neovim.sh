@@ -15,6 +15,9 @@ brew install fzf
 brew install ripgrep
 brew install fd
 
+print_step "Create ripgrep config symlink"
+ln -sf "$DOTFILES_DIR/ripgrep/.ripgreprc" "$HOME/.ripgreprc"
+
 print_step "Install tree-sitter-cli for nvim-treesitter parser builds"
 brew install tree-sitter-cli
 
