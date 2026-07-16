@@ -193,22 +193,35 @@ do
   })
 
   -- sidekick opens with an explicit width, so Neovim skips equalalways and the
-  -- other windows come out uneven. Equalize whenever the split shows...
+  -- other windows come out uneven. Equalize whenever the split shows... Only
+  -- splits take layout space; a float sits above the grid, so equalizing on a
+  -- float open/close would needlessly reset hand-sized editor splits. Guard both
+  -- handlers on relative == "". BufWinEnter can't assume the current window is
+  -- the sidekick one (it opens with enter=false), so resolve the buffer's window.
   vim.api.nvim_create_autocmd("BufWinEnter", {
     group = group,
     callback = function(ev)
-      if vim.bo[ev.buf].filetype == "sidekick_terminal" then
+      local win = vim.fn.bufwinid(ev.buf)
+      if
+        vim.bo[ev.buf].filetype == "sidekick_terminal"
+        and win ~= -1
+        and vim.api.nvim_win_get_config(win).relative == ""
+      then
         vim.schedule(equalize)
       end
     end,
   })
 
-  -- ...or is closed.
+  -- ...or is closed. The window is still valid here, so its config is readable.
   vim.api.nvim_create_autocmd("WinClosed", {
     group = group,
     callback = function(ev)
       local win = tonumber(ev.match)
-      if win and vim.w[win].sidekick_cli ~= nil then
+      if
+        win
+        and vim.w[win].sidekick_cli ~= nil
+        and vim.api.nvim_win_get_config(win).relative == ""
+      then
         vim.schedule(equalize)
       end
     end,
