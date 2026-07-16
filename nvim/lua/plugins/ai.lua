@@ -251,6 +251,7 @@ return {
   {
     "folke/sidekick.nvim",
     opts = {
+      nes = { enabled = false },
       cli = {
         win = {
           -- open as a floating sidebar by default (sidekick's default is "right"
