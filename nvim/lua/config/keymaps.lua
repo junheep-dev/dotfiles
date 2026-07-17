@@ -62,6 +62,19 @@ map("i", ";", ";<c-g>u")
 map("x", "<", "<gv")
 map("x", ">", ">gv")
 
+-- move cursor like arrow keys in Insert/Command/Terminal mode, e.g. to step
+-- outside an auto-inserted pair from mini.pairs (ported from mini.basics)
+map("c", "<M-h>", "<Left>", { silent = false, desc = "Left" })
+map("c", "<M-l>", "<Right>", { silent = false, desc = "Right" })
+map("i", "<M-h>", "<Left>", { remap = true, desc = "Left" })
+map("i", "<M-j>", "<Down>", { remap = true, desc = "Down" })
+map("i", "<M-k>", "<Up>", { remap = true, desc = "Up" })
+map("i", "<M-l>", "<Right>", { remap = true, desc = "Right" })
+map("t", "<M-h>", "<Left>", { desc = "Left" })
+map("t", "<M-j>", "<Down>", { desc = "Down" })
+map("t", "<M-k>", "<Up>", { desc = "Up" })
+map("t", "<M-l>", "<Right>", { desc = "Right" })
+
 -- smart <Tab>: snippet tabstop → sidekick NES → Copilot accept → literal Tab.
 -- Not tied to any one plugin; the require()s are deferred to press time, so
 -- lazy.nvim loads sidekick/copilot on first use (dependency-free at definition).
@@ -112,3 +125,29 @@ map("n", "]e", diagnostic_goto(true, "ERROR"), { desc = "Next Error" })
 map("n", "[e", diagnostic_goto(false, "ERROR"), { desc = "Prev Error" })
 map("n", "]w", diagnostic_goto(true, "WARN"), { desc = "Next Warning" })
 map("n", "[w", diagnostic_goto(false, "WARN"), { desc = "Prev Warning" })
+
+-- \-prefixed option toggles, echoing the new value (ported from mini.basics)
+local function toggle_local(option)
+  return function()
+    vim.wo[option] = not vim.wo[option]
+    print((vim.wo[option] and "" or "no") .. option)
+  end
+end
+map("n", "\\d", function()
+  local enabled = vim.diagnostic.is_enabled({ bufnr = 0 })
+  vim.diagnostic.enable(not enabled, { bufnr = 0 })
+  print(enabled and "nodiagnostic" or "diagnostic")
+end, { desc = "Toggle Diagnostic" })
+map("n", "\\h", function()
+  vim.v.hlsearch = 1 - vim.v.hlsearch
+  print(vim.v.hlsearch == 1 and "hlsearch" or "nohlsearch")
+end, { desc = "Toggle Hlsearch" })
+map("n", "\\i", function()
+  vim.o.ignorecase = not vim.o.ignorecase
+  print(vim.o.ignorecase and "ignorecase" or "noignorecase")
+end, { desc = "Toggle Ignorecase" })
+map("n", "\\l", toggle_local("list"), { desc = "Toggle List" })
+map("n", "\\n", toggle_local("number"), { desc = "Toggle Number" })
+map("n", "\\r", toggle_local("relativenumber"), { desc = "Toggle Relativenumber" })
+map("n", "\\s", toggle_local("spell"), { desc = "Toggle Spell" })
+map("n", "\\w", toggle_local("wrap"), { desc = "Toggle Wrap" })
