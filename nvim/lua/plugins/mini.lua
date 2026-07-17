@@ -366,6 +366,7 @@ return {
           { mode = { "n", "x" }, keys = "g" },
           { mode = { "n", "x" }, keys = "z" },
           { mode = "n", keys = "<C-w>" },
+          { mode = "n", keys = "\\" }, -- option toggles, see keymaps.lua
         },
         clues = {
           { mode = "n", keys = "<leader>a", desc = "+ai" },
