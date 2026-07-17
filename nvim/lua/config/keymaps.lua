@@ -63,7 +63,7 @@ map("x", "<", "<gv")
 map("x", ">", ">gv")
 
 -- move cursor like arrow keys in Insert/Command/Terminal mode, e.g. to step
--- outside an auto-inserted pair from mini.pairs (ported from mini.basics)
+-- outside an auto-inserted pair from mini.pairs
 map("c", "<M-h>", "<Left>", { silent = false, desc = "Left" })
 map("c", "<M-l>", "<Right>", { silent = false, desc = "Right" })
 map("i", "<M-h>", "<Left>", { remap = true, desc = "Left" })
@@ -126,7 +126,7 @@ map("n", "[e", diagnostic_goto(false, "ERROR"), { desc = "Prev Error" })
 map("n", "]w", diagnostic_goto(true, "WARN"), { desc = "Next Warning" })
 map("n", "[w", diagnostic_goto(false, "WARN"), { desc = "Prev Warning" })
 
--- \-prefixed option toggles, echoing the new value (ported from mini.basics)
+-- \-prefixed option toggles, echoing the new value
 local function toggle_local(option)
   return function()
     vim.wo[option] = not vim.wo[option]
