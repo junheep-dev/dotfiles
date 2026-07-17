@@ -263,7 +263,7 @@ return {
           -- 1=flush right); width/height are editor fractions. border makes it
           -- readable and surfaces the " Sidekick " title (a minimal window
           -- hides the title without one).
-          float = { border = "rounded", width = 0.4, height = 0.92, col = 0.98, row = 0.3 },
+          float = { width = 0.4, height = 0.92, col = 0.98, row = 0.3 },
           -- Show the running tool in the float border title (e.g. "Sidekick ·
           -- Claude Code" instead of a static " Sidekick "). Runs per-terminal at
           -- init on the snapshot open_win reads, so each tool gets its own title.
