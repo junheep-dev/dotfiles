@@ -167,9 +167,6 @@ return {
     -- load on startup so autowrite persists the active session on exit
     lazy = false,
     opts = {
-      -- auto-load a project's local session (cwd's Session.vim) when opening
-      -- nvim without file arguments there; local sessions are still only
-      -- ever created manually, via <leader>sl
       autoread = true,
     },
     keys = {
