@@ -217,11 +217,7 @@ do
     group = group,
     callback = function(ev)
       local win = tonumber(ev.match)
-      if
-        win
-        and vim.w[win].sidekick_cli ~= nil
-        and vim.api.nvim_win_get_config(win).relative == ""
-      then
+      if win and vim.w[win].sidekick_cli ~= nil and vim.api.nvim_win_get_config(win).relative == "" then
         vim.schedule(equalize)
       end
     end,
