@@ -166,9 +166,7 @@ return {
     version = "*",
     -- load on startup so autowrite persists the active session on exit
     lazy = false,
-    opts = {
-      autoread = true,
-    },
+    opts = {},
     keys = {
       {
         "<leader>sn",
