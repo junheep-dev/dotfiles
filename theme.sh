@@ -22,10 +22,12 @@ if [ -n "$THEME" ] && [ "$THEME" != "<<-quit" ]; then
 
   git update-index --skip-worktree tmux/tmux.theme.conf
   git update-index --skip-worktree ghostty/theme
+  git update-index --skip-worktree btop/themes/current.theme
 
   cp "$DOTFILES_DIR/themes/$THEME/tmux.conf" ~/.tmux/tmux.theme.conf
   cp "$DOTFILES_DIR/themes/$THEME/neovim.lua" ~/.config/nvim/lua/plugins/theme.lua
   cp "$DOTFILES_DIR/themes/$THEME/ghostty" ~/.config/ghostty/theme
+  cp "$DOTFILES_DIR/themes/$THEME/btop.theme" ~/.config/btop/themes/current.theme
 
   # Desktop wallpaper: warm themes -> Golden Gate day, cool/dark themes ->
   # Golden Gate night, anything else -> NYC (fallback).
