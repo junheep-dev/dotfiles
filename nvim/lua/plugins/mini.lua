@@ -129,7 +129,23 @@ return {
   {
     "nvim-mini/mini.ai",
     version = "*",
-    opts = {},
+    -- config mirrors mini.nvim author's own dotfiles (echasnovski/nvim,
+    -- plugin/30_mini.lua): reuse mini.extra's buffer spec instead of
+    -- hand-rolling one, and only bother with function/block via treesitter.
+    opts = function()
+      local ai = require("mini.ai")
+      require("mini.extra")
+      return {
+        custom_textobjects = {
+          -- `vaB`/`viB` select the whole buffer (`i` skips leading/trailing
+          -- blank lines); `daB` deletes it, etc.
+          B = MiniExtra.gen_ai_spec.buffer(),
+          F = ai.gen_spec.treesitter({ a = "@function.outer", i = "@function.inner" }),
+          o = ai.gen_spec.treesitter({ a = "@block.outer", i = "@block.inner" }),
+        },
+        search_method = "cover",
+      }
+    end,
   },
   {
     "nvim-mini/mini.comment",

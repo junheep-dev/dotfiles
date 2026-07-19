@@ -1,5 +1,12 @@
 return {
   {
+    -- provides the queries/<lang>/textobjects.scm query files that
+    -- mini.ai's treesitter-backed textobjects (function, block) read from;
+    -- its own select/move/swap API is unused, so no setup() call needed
+    "nvim-treesitter/nvim-treesitter-textobjects",
+    branch = "main",
+  },
+  {
     "nvim-treesitter/nvim-treesitter",
     branch = "main", -- the rewrite (frozen); classic API lives on master
     lazy = false, -- per README: this plugin does not support lazy-loading
