@@ -9,8 +9,6 @@ print_header "Chrome"
 brew install --cask google-chrome
 print_header "Dia"
 brew install --cask thebrowsercompany-dia
-print_header "Raycast"
-brew install --cask raycast
 print_header "Notion Calendar"
 brew install --cask notion-calendar
 print_header "VS code"
@@ -21,8 +19,6 @@ print_header "Claude Desktop"
 brew install --cask claude
 print_header "Spotify"
 brew install --cask spotify
-print_header "Typora"
-brew install --cask typora
 
 # MAS
 print_header "MAS"
