@@ -7,8 +7,8 @@ print_header "1Password"
 brew install --cask 1password
 print_header "Chrome"
 brew install --cask google-chrome
-print_header "Arc"
-brew install --cask arc
+print_header "Dia"
+brew install --cask thebrowsercompany-dia
 print_header "Raycast"
 brew install --cask raycast
 print_header "Notion Calendar"
