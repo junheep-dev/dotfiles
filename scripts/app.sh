@@ -24,12 +24,6 @@ brew install --cask spotify
 print_header "Typora"
 brew install --cask typora
 
-# Skip personal apps in work mode
-if [[ "$WORK_MODE" != "true" ]]; then
-  print_header "HEY"
-  brew install --cask hey
-fi
-
 # MAS
 print_header "MAS"
 brew install mas
