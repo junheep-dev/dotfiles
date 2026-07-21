@@ -13,8 +13,8 @@ print_header "Notion Calendar"
 brew install --cask notion-calendar
 print_header "VS code"
 brew install --cask visual-studio-code
-print_header "Logseq"
-brew install --cask logseq
+print_header "Obsidian"
+brew install --cask obsidian
 print_header "Claude Desktop"
 brew install --cask claude
 print_header "Spotify"
