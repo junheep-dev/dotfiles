@@ -31,15 +31,7 @@ return {
       vim.diagnostic.config({
         severity_sort = true,
         virtual_lines = { current_line = true },
-        float = { border = "rounded", source = "if_many" },
-        signs = {
-          text = {
-            [vim.diagnostic.severity.ERROR] = " ",
-            [vim.diagnostic.severity.WARN] = " ",
-            [vim.diagnostic.severity.HINT] = " ",
-            [vim.diagnostic.severity.INFO] = " ",
-          },
-        },
+        float = { source = "if_many" },
       })
 
       for server, config in pairs(opts.servers) do
