@@ -11,7 +11,7 @@ source "$DOTFILES_DIR/scripts/dev/tmux.sh"
 source "$DOTFILES_DIR/scripts/dev/neovim.sh"
 source "$DOTFILES_DIR/scripts/dev/lazygit.sh"
 source "$DOTFILES_DIR/scripts/dev/btop.sh"
-source "$DOTFILES_DIR/scripts/dev/claude.sh"
+source "$DOTFILES_DIR/scripts/dev/ai.sh"
 
 print_header "GitHub CLI"
 brew install gh

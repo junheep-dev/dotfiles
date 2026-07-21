@@ -11,3 +11,10 @@ cp "$DOTFILES_DIR/claude/settings.json" "$HOME/.claude/settings.json"
 ln -sf "$DOTFILES_DIR/claude/hooks/notify.sh" "$HOME/.claude/hooks/notify.sh"
 
 print_success "Claude Code setup complete"
+
+print_header "Codex CLI"
+
+print_step "Install Codex CLI"
+brew install codex
+
+print_success "Codex CLI setup complete"
