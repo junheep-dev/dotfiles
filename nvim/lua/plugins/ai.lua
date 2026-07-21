@@ -34,7 +34,7 @@ _G.SidekickFloat = {}
 -- Two size presets: the default right sidebar and a near-full reading view.
 -- full shares the sidebar's height/row so switching only changes the width.
 SidekickFloat.presets = {
-  sidebar = { width = 0.4, height = 0.92, col = 0.98, row = 0.3 },
+  sidebar = { width = 0.4, height = 0.92, col = 0.96, row = 0.3 },
   full = { width = 0.92, height = 0.92, col = 0.5, row = 0.3 },
 }
 
@@ -254,12 +254,12 @@ return {
           -- split); <c-,> still toggles to a split when wanted.
           layout = "float",
           split = { width = 0.5 },
-          -- floating layout as a right-anchored sidebar. col=0.98 leaves a small
+          -- floating layout as a right-anchored sidebar. col=0.96 leaves a small
           -- gap from the right edge (col is a fraction of the leftover space,
           -- 1=flush right); width/height are editor fractions. border makes it
           -- readable and surfaces the " Sidekick " title (a minimal window
           -- hides the title without one).
-          float = { border = "single", width = 0.4, height = 0.92, col = 0.98, row = 0.3 },
+          float = { width = 0.4, height = 0.92, col = 0.96, row = 0.3 },
           -- Show the running tool in the float border title (e.g. "Sidekick ·
           -- Claude Code" instead of a static " Sidekick "). Runs per-terminal at
           -- init on the snapshot open_win reads, so each tool gets its own title.
