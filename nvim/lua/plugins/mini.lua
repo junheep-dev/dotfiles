@@ -6,7 +6,9 @@ return {
     "nvim-mini/mini.diff",
     version = "*",
     lazy = false,
-    opts = {},
+    -- 'sign' style (not the number-based default) so snacks.statuscolumn picks
+    -- the signs up and renders them in its right git slot
+    opts = { view = { style = "sign" } },
     keys = {
       {
         "<leader>go",

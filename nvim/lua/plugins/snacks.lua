@@ -32,6 +32,9 @@ return {
       nes = { enable = false },
       bigfile = { enabled = true },
       quickfile = { enabled = true },
+      -- gutter layout: [mark/sign] [number] [fold/git]; closed-fold icons come
+      -- from fillchars foldclose (options.lua)
+      statuscolumn = { enabled = true },
       terminal = {
         win = {
           keys = {
