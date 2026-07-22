@@ -16,16 +16,6 @@ return {
     },
   },
   {
-    "MeanderingProgrammer/render-markdown.nvim",
-    ft = { "markdown", "norg", "rmd", "org", "codecompanion" },
-    opts = {
-      code = {
-        -- thick border keeps code block height stable across normal/insert mode
-        border = "thick",
-      },
-    },
-  },
-  {
     "iamcco/markdown-preview.nvim",
     cmd = { "MarkdownPreviewToggle", "MarkdownPreview", "MarkdownPreviewStop" },
     build = function()
