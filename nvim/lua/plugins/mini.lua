@@ -138,7 +138,11 @@ return {
   {
     "nvim-mini/mini.icons",
     version = "*",
-    opts = {},
+    config = function()
+      require("mini.icons").setup()
+      -- Let plugins expecting nvim-web-devicons (e.g. neo-tree) use mini.icons
+      MiniIcons.mock_nvim_web_devicons()
+    end,
   },
   {
     "nvim-mini/mini.pairs",
