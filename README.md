@@ -13,7 +13,7 @@
 3. Clone this repository into `~/workspace/dotfiles`
 
    ```bash
-   git clone https://github.com/junheep-dev/dotfiles.git ~/workspace/dotfiles
+   git clone git@github.com:junheep-dev/dotfiles.git ~/workspace/dotfiles
    ```
 
 4. Run `./install.sh`
@@ -21,12 +21,6 @@
    ```bash
    cd ~/workspace/dotfiles
    ./install.sh
-   ```
-
-   For work environments, you can skip personal apps:
-
-   ```bash
-   ./install.sh --work
    ```
 
 5. Restart mac
@@ -45,6 +39,7 @@ Available themes:
 - Tokyo Night night
 - Catppuccin
 - Gruvbox Material
+- Gruvbox Materail Dark
 - GitHub Dark Default
 - Kanagawa
 
