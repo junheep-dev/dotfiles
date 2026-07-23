@@ -8,7 +8,7 @@ return {
   keys = {
     { "<leader>ee", "<Cmd>Neotree toggle<CR>", desc = "Neo-tree" },
     { "<leader>eE", "<Cmd>Neotree reveal<CR>", desc = "Neo-tree (reveal file)" },
-    { "<leader>eg", "<Cmd>Neotree float git_status<CR>", desc = "Git status" },
+    { "<leader>eg", "<Cmd>Neotree left git_status<CR>", desc = "Git status" },
   },
   opts = {
     close_if_last_window = true,
