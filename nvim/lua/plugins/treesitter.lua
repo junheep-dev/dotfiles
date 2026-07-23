@@ -59,7 +59,7 @@ return {
           if not pcall(vim.treesitter.start) then
             return
           end
-          -- folds: only on parser-backed buffers, expr-based off the syntax tree
+
           vim.wo[0][0].foldmethod = "expr"
           vim.wo[0][0].foldexpr = "v:lua.vim.treesitter.foldexpr()"
         end,
