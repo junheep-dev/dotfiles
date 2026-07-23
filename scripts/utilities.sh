@@ -6,12 +6,6 @@ source "$DOTFILES_DIR/scripts/utilities/karabiner.sh"
 source "$DOTFILES_DIR/scripts/utilities/alt-tab.sh"
 source "$DOTFILES_DIR/scripts/utilities/hammerspoon.sh"
 
-print_header "LuLu"
-brew install --cask lulu
-
-print_header "OverSight"
-brew install --cask oversight
-
 print_header "MonitorControl"
 brew install --cask monitorcontrol
 

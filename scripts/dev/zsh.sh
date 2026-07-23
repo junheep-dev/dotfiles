@@ -12,4 +12,7 @@ brew install zsh-autosuggestions
 brew install zsh-syntax-highlighting
 brew install powerlevel10k
 
+print_step "Install fzf for shell integration (eval \"\$(fzf --zsh)\")"
+brew install fzf
+
 print_success "Zsh setup complete"

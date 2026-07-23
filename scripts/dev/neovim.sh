@@ -10,10 +10,8 @@ mkdir -p $HOME/.config
 rm -rf $HOME/.config/nvim
 ln -sf "$DOTFILES_DIR/nvim" "$HOME/.config/nvim"
 
-print_step "Install fzf, ripgrep, fd for fzf-lua"
-brew install fzf
+print_step "Install ripgrep for mini.pick and :grep"
 brew install ripgrep
-brew install fd
 
 print_step "Create ripgrep config symlink"
 ln -sf "$DOTFILES_DIR/ripgrep/.ripgreprc" "$HOME/.ripgreprc"
