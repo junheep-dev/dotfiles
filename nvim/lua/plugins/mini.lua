@@ -285,6 +285,23 @@ return {
       { "<leader><leader>", "<Cmd>Pick files<CR>", desc = "Files" },
       { "<leader>/", "<Cmd>Pick grep_live<CR>", desc = "Grep Live" },
       { "<leader>ff", "<Cmd>Pick files<CR>", desc = "Files" },
+      {
+        -- Like `files`, but bypasses .gitignore/.ignore (-uu) so ignored
+        -- files (e.g. .env) show up. Mirrors the toggle other pickers expose.
+        "<leader>fF",
+        function()
+          local pick = require("mini.pick")
+          pick.builtin.cli({ command = { "rg", "--files", "--color=never", "-uu", "--glob=!.git/**" } }, {
+            source = {
+              name = "Files (incl. ignored)",
+              show = function(buf_id, items, query)
+                return pick.default_show(buf_id, items, query, { show_icons = true })
+              end,
+            },
+          })
+        end,
+        desc = "Files (incl. ignored)",
+      },
       { "<leader>fg", "<Cmd>Pick grep_live<CR>", desc = "Grep Live" },
       { "<leader>fG", '<Cmd>Pick grep pattern="<cword>"<CR>', desc = "Grep Current Word" },
       { "<leader>fb", "<Cmd>Pick buffers<CR>", desc = "Buffers" },
