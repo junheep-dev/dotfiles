@@ -150,6 +150,13 @@ return {
     opts = {},
   },
   {
+    -- load after mini.pairs so endwise wraps its <CR> map instead of replacing it.
+    -- can't lazy-load: sets b:endwise_addition on FileType, already passed by the current buffer
+    "tpope/vim-endwise",
+    dependencies = { "nvim-mini/mini.pairs" },
+    lazy = false,
+  },
+  {
     "nvim-mini/mini.surround",
     version = "*",
     opts = {},
