@@ -69,7 +69,7 @@ opt.grepprg = "rg --vimgrep"
 opt.grepformat = "%f:%l:%c:%m"
 
 -- Completion & command-line
-opt.completeopt = "menuone,noselect"
+opt.completeopt = "menuone,noinsert"
 opt.pumheight = 10 -- maximum number of entries in a popup
 opt.pumblend = 10 -- subtle popup blend; Pmenu bg is opaque so text can't bleed through
 
