@@ -29,6 +29,13 @@ local transparent_groups = {
   "MiniPickPrompt",
   "MiniNotifyNormal",
   "MiniNotifyBorder",
+  -- neo-tree sidebar (+ float mode)
+  "NeoTreeNormal",
+  "NeoTreeNormalNC",
+  "NeoTreeEndOfBuffer",
+  "NeoTreeFloatNormal",
+  "NeoTreeFloatBorder",
+  "NeoTreeFloatTitle",
 }
 
 local function apply_transparency()
