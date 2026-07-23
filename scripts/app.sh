@@ -19,6 +19,8 @@ print_header "Claude Desktop"
 brew install --cask claude
 print_header "Spotify"
 brew install --cask spotify
+print_header "Spark"
+brew install --cask readdle-spark
 
 # MAS
 print_header "MAS"

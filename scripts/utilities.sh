@@ -18,4 +18,7 @@ brew install --cask cleanshot
 print_header "Logi Options plus"
 brew install --cask logi-options+
 
+print_header "SoundSource"
+brew install --cask soundsource
+
 print_success "Utilities setup complete"
