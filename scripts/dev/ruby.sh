@@ -4,6 +4,7 @@ print_header "Ruby"
 
 print_step "Install rbenv"
 brew install rbenv
+# Writes rbenv's shell initialization into the login profile (idempotent).
 rbenv init
 
 print_step "Install Ruby latest stable version"

@@ -10,7 +10,7 @@ defaults write -g ApplePressAndHoldEnabled -bool false # Disable press and hold 
 
 print_step "Remap ₩ key to backtick (\`)"
 mkdir -p ~/Library/KeyBindings
-cat << EOF > ~/Library/KeyBindings/DefaultkeyBinding.dict
+cat << EOF > ~/Library/KeyBindings/DefaultKeyBinding.dict
 {
     "₩" = ("insertText:", "\`");
     "~4" = ("insertText:", "₩");

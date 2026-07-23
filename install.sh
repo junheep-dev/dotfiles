@@ -1,7 +1,7 @@
 #!/bin/zsh
 
 # Define the dotfiles directory
-DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DOTFILES_DIR="${0:A:h}"
 
 # Source common utilities
 source "$DOTFILES_DIR/scripts/utils.sh"
@@ -13,14 +13,6 @@ SETUP_SCRIPTS=(
   "utilities"
   "app"
 )
-
-# Check for work flag
-WORK_MODE=false
-if [[ "$*" == *"--work"* ]]; then
-  WORK_MODE=true
-  # Remove --work from arguments
-  set -- "${@/--work/}"
-fi
 
 # Check if a specific script was provided as an argument
 if [ $# -gt 0 ]; then
