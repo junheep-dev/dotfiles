@@ -18,7 +18,7 @@ THEME_DISPLAY=$(gum choose "${THEME_NAMES[@]}" "<< Quit" --header "Choose your t
 THEME=$(echo "$THEME_DISPLAY" | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
 
 if [ -n "$THEME" ] && [ "$THEME" != "<<-quit" ]; then
-  DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  DOTFILES_DIR="${0:A:h}"
 
   git update-index --skip-worktree tmux/tmux.theme.conf
   git update-index --skip-worktree ghostty/theme
@@ -29,25 +29,7 @@ if [ -n "$THEME" ] && [ "$THEME" != "<<-quit" ]; then
   cp "$DOTFILES_DIR/themes/$THEME/ghostty" ~/.config/ghostty/theme
   cp "$DOTFILES_DIR/themes/$THEME/btop.theme" ~/.config/btop/themes/current.theme
 
-  # Desktop wallpaper: warm themes -> Golden Gate day, cool/dark themes ->
-  # Golden Gate night, anything else -> NYC (fallback).
-  WP_DIR="$DOTFILES_DIR/wallpapers"
-  GG_DAY="$WP_DIR/golden-gate-day.jpg"
-  GG_NIGHT="$WP_DIR/golden-gate-night.jpg"
-  case "$THEME" in
-  gruvbox-material | gruvbox-material-hard | kanagawa-dragon)
-    WALLPAPER="$GG_DAY"
-    ;;
-  tokyo-night-moon | tokyo-night-night | catppuccin-mocha | github-dark-default)
-    WALLPAPER="$GG_NIGHT"
-    ;;
-  *)
-    WALLPAPER="$WP_DIR/nyc-manhattan-dusk.jpg"
-    ;;
-  esac
-  if [ -f "$WALLPAPER" ]; then
-    osascript -e "tell application \"System Events\" to set picture of every desktop to \"$WALLPAPER\""
-  fi
+  "$DOTFILES_DIR/wallpaper.sh" "$THEME"
 
   tmux source ~/.tmux.conf
   pkill -SIGUSR2 ghostty
