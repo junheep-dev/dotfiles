@@ -8,6 +8,7 @@ curl -fsSL https://claude.ai/install.sh | bash
 print_step "Create configuration"
 mkdir -p $HOME/.claude/hooks
 cp "$DOTFILES_DIR/claude/settings.json" "$HOME/.claude/settings.json"
+ln -sf "$DOTFILES_DIR/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
 ln -sf "$DOTFILES_DIR/claude/hooks/notify.sh" "$HOME/.claude/hooks/notify.sh"
 ln -sf "$DOTFILES_DIR/claude/hooks/notify-core.sh" "$HOME/.claude/hooks/notify-core.sh"
 ln -sf "$DOTFILES_DIR/claude/statusline-command.sh" "$HOME/.claude/statusline-command.sh"
