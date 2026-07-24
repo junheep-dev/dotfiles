@@ -287,7 +287,32 @@ return {
     -- load on startup (keys would otherwise lazy-load) so setup() replaces
     -- vim.ui.select from the very first select prompt
     lazy = false,
-    opts = {},
+    config = function()
+      require("mini.pick").setup()
+
+      -- Terminal `cmd+v` (Ghostty) sends a bracketed paste that tmux forwards to
+      -- Neovim in chunks, so Neovim delivers it as a *streaming* paste (phase
+      -- 1/2/3). mini.pick's own vim.paste wrapper only supports non-streaming
+      -- (phase == -1) and otherwise warns "There is no streaming paste support"
+      -- (pick.lua). We wrap vim.paste *after* setup so ours runs first: while a
+      -- picker is active, read the clipboard register directly and push it into
+      -- the query, bypassing the phase check entirely. See mini.nvim#1263.
+      local paste_orig = vim.paste
+      vim.paste = function(...)
+        if not MiniPick.is_picker_active() then
+          return paste_orig(...)
+        end
+        for _, reg in ipairs({ "+", "*", '"' }) do
+          local content = vim.fn.getreg(reg) or ""
+          if content ~= "" then
+            -- split so a multi-line clipboard doesn't inject raw newlines
+            MiniPick.set_picker_query(vim.split(content, "\n", { trimempty = true }))
+            return true
+          end
+        end
+        return true
+      end
+    end,
     keys = {
       { "<leader><leader>", "<Cmd>Pick files<CR>", desc = "Files" },
       { "<leader>/", "<Cmd>Pick grep_live<CR>", desc = "Grep Live" },
