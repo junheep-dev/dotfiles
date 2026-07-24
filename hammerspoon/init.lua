@@ -246,17 +246,17 @@ local function focusMode(bundleIDs, layout)
 end
 
 -- browser: browser only (with window layout)
-hs.hotkey.bind({ "alt" }, "1", function()
+hs.hotkey.bind({ "cmd", "ctrl" }, "1", function()
   focusMode({ DIA }, true)
 end)
 
 -- code: terminal only (with window layout)
-hs.hotkey.bind({ "alt" }, "2", function()
+hs.hotkey.bind({ "cmd", "ctrl" }, "2", function()
   focusMode({ GHOSTTY }, true)
 end)
 
 -- meeting: Dia left / Zoom meeting window right, side by side
-hs.hotkey.bind({ "alt" }, "3", function()
+hs.hotkey.bind({ "cmd", "ctrl" }, "3", function()
   focusMode({ ZOOM, DIA })
   hs.timer.doAfter(0.15, layoutMeeting)
 end)
