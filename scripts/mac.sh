@@ -28,6 +28,14 @@ print_header "Hot Corners"
 print_step "Set bottom-right corner to activate screen saver"
 defaults write com.apple.dock wvous-br-corner -int 5
 
+print_header "Lock Screen"
+print_step "Turn display off when inactive (battery 2m, power adapter 20m)"
+sudo pmset -b displaysleep 2
+sudo pmset -c displaysleep 20
+
+print_step "Require password 5 seconds after screen saver or display off"
+sysadminctl -screenLock 5 -password -
+
 print_header "Finder"
 print_step "Hide tags section in Finder sidebar"
 defaults write com.apple.finder ShowRecentTags -bool false
