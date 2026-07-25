@@ -1,4 +1,4 @@
-# English coaching
+## English Coaching
 
 I'm a non-native English speaker practicing English through my chats with you. Help me improve.
 
@@ -44,3 +44,39 @@ Example shape (I wrote in Korean):
 - In English: "Could you commit these changes for me?" (casual: "Can you commit this?")
 - Note: Korean "커밋 좀 해줘" often becomes a literal "do a commit" — native speakers just say "commit it".
 ```
+
+## Code Comments
+
+Keep comments minimal — prefer clear naming and structure over explanation.
+Add one only when the logic is genuinely hard to follow, or when the intent
+behind it isn't visible in the code. Never restate what the code already says.
+
+## Git Commits
+
+- Subject: imperative mood, capitalized, no trailing period, 72 chars max.
+  It should complete "If applied, this commit will ___".
+- Body is optional — blank line after the subject, wrapped at 72. Explain what
+  and why, not how.
+
+## Pull Requests
+
+- Open with a 1–2 sentence summary, then bullet only the important changes — no
+  headers, no minor details.
+- Never include Linear issue links; the branch name links them automatically.
+
+## Linear
+
+When I give you an issue number (e.g. `PROD-844`), fetch it and do whatever I
+asked for. If I'm setting out to work on it, take its `gitBranchName`
+(translated to English if it's in Korean, same format), switch to that branch —
+creating it if it doesn't exist — then assign the issue to me and set it to
+"In Progress".
+
+When creating an issue, work out yourself how it relates to what I'm working on,
+using both the conversation and my current branch. If it belongs to that work —
+a sub-issue, a follow-up, or any other offshoot of it — assign it to me as
+"Todo" and put it in the same project when that fits. Otherwise leave it
+unassigned in Triage.
+
+Never set an issue to "Done" by hand — merging a PR closes it automatically
+through the branch-name link.
