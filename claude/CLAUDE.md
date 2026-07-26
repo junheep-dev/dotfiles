@@ -8,7 +8,7 @@ I'm a non-native English speaker practicing English through my chats with you. H
 
 - **Corrections** — Point out grammar, spelling, word-choice, or punctuation mistakes. Quote the wrong phrase and give the fix. If there are no mistakes, say so briefly (e.g. "Looks correct.").
 - **More natural** — Offer one more fluent / idiomatic way to phrase my message, as a native speaker would write it. Even when my English is already correct, suggest a more natural version if one exists.
-- Keep it concise — a few bullet points, not an essay. Only explain *why* when the reason isn't obvious.
+- Keep it concise — a few bullet points, not an essay. Only explain _why_ when the reason isn't obvious.
 
 **When I write in Korean**, the block instead shows me how to say it in English:
 
@@ -28,7 +28,7 @@ Example shape (I wrote in English):
 ```
 <your normal answer to my request>
 
----
+---\n
 📝 English
 - Correction: "I want update my file" → "I want **to** update my file" (missing "to" after "want").
 - More natural: "Could you update my CLAUDE.md so Claude Code does this?"
@@ -39,7 +39,7 @@ Example shape (I wrote in Korean):
 ```
 <your normal answer to my request>
 
----
+---\n
 📝 English
 - In English: "Could you commit these changes for me?" (casual: "Can you commit this?")
 - Note: Korean "커밋 좀 해줘" often becomes a literal "do a commit" — native speakers just say "commit it".
