@@ -97,6 +97,7 @@ end)
 local DIA = "company.thebrowser.dia"
 local GHOSTTY = "com.mitchellh.ghostty"
 local ZOOM = "us.zoom.xos"
+local SLACK = "com.tinyspeck.slackmacgap"
 
 -- Show an app instantly: unhide, then raise its main window via AX. The AX raise
 -- reveals Chromium apps (e.g. Dia) that ignore unhide(), so we never shell out to
@@ -165,27 +166,48 @@ hs.hotkey.bind({ "alt", "ctrl" }, "return", function()
   layoutWindow(hs.window.focusedWindow())
 end)
 
--- Meeting layout: Dia on the left / Zoom meeting window on the right
--- (ultrawide = 80% total, centered; otherwise = full width), keeping GAP
-local function layoutMeeting()
-  local diaApp = hs.application.get(DIA)
-  local zoomApp = hs.application.get(ZOOM)
-  if not diaApp or not zoomApp then
-    return
-  end
+-- Call-window candidates in priority order, matched by window title. Home windows
+-- ("Zoom Workplace", Slack's main window) are deliberately absent — only a window
+-- that proves a live call counts.
+local CALL_CANDIDATES = {
+  { id = ZOOM, pattern = "Meeting" },
+  { id = SLACK, pattern = "[Hh]uddle" },
+}
 
-  local diaWin = diaApp:mainWindow()
-  -- Zoom has separate home ("Zoom Workplace") / meeting ("Zoom Meeting") windows
-  -- → prefer the meeting window, fall back to the main one
-  local zoomWin
-  for _, w in ipairs(zoomApp:allWindows()) do
-    if (w:title() or ""):find("Meeting") then
-      zoomWin = w
-      break
+local function matchWindow(candidate)
+  local app = hs.application.get(candidate.id)
+  if not app then
+    return nil
+  end
+  for _, w in ipairs(app:allWindows()) do
+    if (w:title() or ""):find(candidate.pattern) then
+      return w
     end
   end
-  zoomWin = zoomWin or zoomApp:mainWindow()
-  if not diaWin or not zoomWin then
+end
+
+local function callCandidate()
+  for _, c in ipairs(CALL_CANDIDATES) do
+    if matchWindow(c) then
+      return c
+    end
+  end
+  return CALL_CANDIDATES[1]
+end
+
+-- Lenient variant for after focusMode: the app may have just launched, so a
+-- missing call window falls back to whatever main window it has by now.
+local function callWindow(candidate)
+  local app = hs.application.get(candidate.id)
+  return matchWindow(candidate) or (app and app:mainWindow())
+end
+
+-- Meeting layout: call window on the left 1/3 / Dia on the right 2/3
+-- (ultrawide = 80% total, centered; otherwise = full width), keeping GAP
+local function layoutMeeting(callWin)
+  local diaApp = hs.application.get(DIA)
+  local browserWin = diaApp and diaApp:mainWindow()
+  if not callWin or not browserWin then
     return
   end
 
@@ -201,12 +223,14 @@ local function layoutMeeting()
     left = f.x + GAP
   end
 
-  local eachW = (regionW - GAP) / 2
+  local usableW = regionW - GAP
+  local callW = usableW / 3
+  local browserW = usableW - callW
   local top = f.y + GAP
   local h = f.h - 2 * GAP
 
-  diaWin:setFrame({ x = left, y = top, w = eachW, h = h }, 0)
-  zoomWin:setFrame({ x = left + eachW + GAP, y = top, w = eachW, h = h }, 0)
+  callWin:setFrame({ x = left, y = top, w = callW, h = h }, 0)
+  browserWin:setFrame({ x = left + callW + GAP, y = top, w = browserW, h = h }, 0)
 end
 
 local function focusMode(bundleIDs, layout)
@@ -255,8 +279,12 @@ hs.hotkey.bind({ "cmd", "ctrl" }, "2", function()
   focusMode({ GHOSTTY }, true)
 end)
 
--- meeting: Dia left / Zoom meeting window right, side by side
+-- meeting: call app (Zoom or Slack) left 1/3 / Dia right 2/3
 hs.hotkey.bind({ "cmd", "ctrl" }, "3", function()
-  focusMode({ ZOOM, DIA })
-  hs.timer.doAfter(0.15, layoutMeeting)
+  local candidate = callCandidate()
+  focusMode({ candidate.id, DIA })
+  -- Re-resolve the window: focusMode may have just launched the app
+  hs.timer.doAfter(0.15, function()
+    layoutMeeting(callWindow(candidate))
+  end)
 end)
