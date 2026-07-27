@@ -305,8 +305,13 @@ return {
         for _, reg in ipairs({ "+", "*", '"' }) do
           local content = vim.fn.getreg(reg) or ""
           if content ~= "" then
-            -- split so a multi-line clipboard doesn't inject raw newlines
-            MiniPick.set_picker_query(vim.split(content, "\n", { trimempty = true }))
+            -- mini.pick's query is a list of single chars, so split into
+            -- characters (not one blob) to keep backspace/caret editing working;
+            -- flatten newlines/tabs to spaces like the native paste does.
+            local chars = vim.fn.split(content:gsub("[\n\t]", " "), "\\zs")
+            local query = MiniPick.get_picker_query() or {}
+            vim.list_extend(query, chars)
+            MiniPick.set_picker_query(query)
             return true
           end
         end
