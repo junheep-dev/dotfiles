@@ -298,9 +298,16 @@ return {
       -- picker is active, read the clipboard register directly and push it into
       -- the query, bypassing the phase check entirely. See mini.nvim#1263.
       local paste_orig = vim.paste
-      vim.paste = function(...)
+      vim.paste = function(lines, phase)
         if not MiniPick.is_picker_active() then
-          return paste_orig(...)
+          return paste_orig(lines, phase)
+        end
+        -- A streamed paste calls this once per phase (1=start, 2=continue,
+        -- 3=end). We read the whole register ourselves, so act only on the
+        -- first call (phase 1) or a non-streamed paste (phase -1); otherwise
+        -- every phase would re-append the clipboard and duplicate it.
+        if phase ~= -1 and phase ~= 1 then
+          return true
         end
         for _, reg in ipairs({ "+", "*", '"' }) do
           local content = vim.fn.getreg(reg) or ""
