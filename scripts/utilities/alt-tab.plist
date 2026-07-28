@@ -75,6 +75,6 @@
 	<key>updatePolicy</key>
 	<string>1</string>
 	<key>windowDisplayDelay</key>
-	<string>150</string>
+	<string>100</string>
 </dict>
 </plist>
