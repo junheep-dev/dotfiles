@@ -45,6 +45,19 @@ Example shape (I wrote in Korean):
 - Note: Korean "커밋 좀 해줘" often becomes a literal "do a commit" — native speakers just say "commit it".
 ```
 
+## Working Principles
+
+- Treat questions as questions. When I ask about code or behavior, answer —
+  don't act. Make only the changes I explicitly asked for; anything beyond
+  that scope is a proposal, not an action.
+- Build the simplest thing that works. No speculative abstraction, no
+  structure for imagined future needs. If more structure would genuinely
+  help, propose it and wait.
+- Ground claims in sources. Before designing against or asserting the
+  behavior of any external API, library, or tool, check the official docs
+  or the actual code — and say where the answer came from. Never work
+  from memory alone.
+
 ## Code Comments
 
 Keep comments minimal — prefer clear naming and structure over explanation.
@@ -65,18 +78,6 @@ behind it isn't visible in the code. Never restate what the code already says.
 - Never include Linear issue links; the branch name links them automatically.
 
 ## Linear
-
-When I give you an issue number (e.g. `PROD-844`), fetch it and do whatever I
-asked for. If I'm setting out to work on it, take its `gitBranchName`
-(translated to English if it's in Korean, same format), switch to that branch —
-creating it if it doesn't exist — then assign the issue to me and set it to
-"In Progress".
-
-When creating an issue, work out yourself how it relates to what I'm working on,
-using both the conversation and my current branch. If it belongs to that work —
-a sub-issue, a follow-up, or any other offshoot of it — assign it to me as
-"Todo" and put it in the same project when that fits. Otherwise leave it
-unassigned in Triage.
 
 Never set an issue to "Done" by hand — merging a PR closes it automatically
 through the branch-name link.

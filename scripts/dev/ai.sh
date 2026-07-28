@@ -8,10 +8,14 @@ curl -fsSL https://claude.ai/install.sh | bash
 print_step "Create configuration"
 mkdir -p $HOME/.claude/hooks
 cp "$DOTFILES_DIR/claude/settings.json" "$HOME/.claude/settings.json"
-ln -sf "$DOTFILES_DIR/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
+ln -sf "$DOTFILES_DIR/agents/AGENTS.md" "$HOME/.claude/CLAUDE.md"
 ln -sf "$DOTFILES_DIR/claude/hooks/notify.sh" "$HOME/.claude/hooks/notify.sh"
 ln -sf "$DOTFILES_DIR/claude/hooks/notify-core.sh" "$HOME/.claude/hooks/notify-core.sh"
 ln -sf "$DOTFILES_DIR/claude/statusline-command.sh" "$HOME/.claude/statusline-command.sh"
+mkdir -p $HOME/.claude/skills
+for skill in "$DOTFILES_DIR"/agents/skills/*/; do
+  ln -sfn "${skill%/}" "$HOME/.claude/skills/$(basename "$skill")"
+done
 
 print_success "Claude Code setup complete"
 
@@ -25,6 +29,12 @@ mkdir -p $HOME/.codex/hooks
 ln -sf "$DOTFILES_DIR/codex/hooks/notify.sh" "$HOME/.codex/hooks/notify.sh"
 # notify-core.sh is shared; keep the canonical copy under claude/hooks
 ln -sf "$DOTFILES_DIR/claude/hooks/notify-core.sh" "$HOME/.codex/hooks/notify-core.sh"
+ln -sf "$DOTFILES_DIR/agents/AGENTS.md" "$HOME/.codex/AGENTS.md"
+# skills are shared with Codex via the Agent Skills standard directory
+mkdir -p $HOME/.agents/skills
+for skill in "$DOTFILES_DIR"/agents/skills/*/; do
+  ln -sfn "${skill%/}" "$HOME/.agents/skills/$(basename "$skill")"
+done
 # config.toml holds machine-specific project trust, so it isn't symlinked; just
 # ensure the notify hook is registered. `notify` is a root key, so it must
 # precede any [table] section — prepend it to stay valid TOML.
