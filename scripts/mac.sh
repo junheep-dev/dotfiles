@@ -24,17 +24,20 @@ defaults write com.apple.dock autohide -bool true
 defaults write com.apple.dock tilesize -float 55
 killall Dock
 
-print_header "Hot Corners"
-print_step "Set bottom-right corner to activate screen saver"
-defaults write com.apple.dock wvous-br-corner -int 5
-
 print_header "Lock Screen"
-print_step "Turn display off when inactive (battery 2m, power adapter 20m)"
+print_step "Turn display off when inactive (battery 2m, power adapter 30m)"
 sudo pmset -b displaysleep 2
-sudo pmset -c displaysleep 20
+sudo pmset -c displaysleep 30
+
+print_step "Start screen saver after 10 minutes of inactivity"
+defaults -currentHost write com.apple.screensaver idleTime -int 600
 
 print_step "Require password 5 seconds after screen saver or display off"
 sysadminctl -screenLock 5 -password -
+
+print_header "Hot Corners"
+print_step "Set bottom-right corner to activate screen saver"
+defaults write com.apple.dock wvous-br-corner -int 5
 
 print_header "Finder"
 print_step "Hide tags section in Finder sidebar"
