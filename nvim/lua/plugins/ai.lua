@@ -23,32 +23,43 @@ vim.api.nvim_create_autocmd("User", {
     end
   end,
 })
--- Sidekick floating-window control. The float is fully described by the four
--- config.cli.win.float fractions {width, height, col, row} (col/row are
--- positions within the leftover space: 0=top/left, 1=bottom/right). SidekickFloat
--- keeps the open float in sync with those fractions and backs the <C-'> shape
--- cycle (sidebar right/left/full). Defined at startup (this file is imported
--- eagerly for its spec).
+-- Sidekick floating-window control: width/col come from the config fractions
+-- (col positions within the leftover space, 0=left 1=right), height/row from
+-- max_vert below. Backs the <C-'> shape cycle (sidebar right/left/full).
+-- Defined at startup (this file is imported eagerly for its spec).
 _G.SidekickFloat = {}
 
--- Two size presets: the default right sidebar and a near-full reading view.
--- full shares the sidebar's height/row so switching only changes the width.
+-- Two width presets: the default right sidebar and a near-full reading view.
+-- Only width/col vary; height/row always come from max_vert.
 SidekickFloat.presets = {
-  sidebar = { width = 0.4, height = 0.92, col = 0.96, row = 0.3 },
-  full = { width = 0.92, height = 0.92, col = 0.5, row = 0.3 },
+  sidebar = { width = 0.4, col = 0.96 },
+  full = { width = 0.92, col = 0.5 },
 }
 
--- Recompute the open float's geometry from the current config fractions. Also
--- used by the VimResized handler so the float keeps its ratio/position on resize.
+-- Max float height and its row: vim.o.lines minus the rows that must stay
+-- visible — tabline above, statusline + cmdline below — and the 2 rows
+-- winborder draws outside `height`. A fraction-based height can't do this: the
+-- reserved rows are a fixed cost, so on small displays the fractional leftover
+-- is too thin and the float covers the bars.
+local function max_vert()
+  local tabline = vim.o.showtabline == 2 or (vim.o.showtabline == 1 and #vim.api.nvim_list_tabpages() > 1)
+  local top = tabline and 1 or 0
+  local bottom = (vim.o.laststatus > 0 and 1 or 0) + vim.o.cmdheight
+  return math.max(vim.o.lines - top - bottom - 2, 10), top
+end
+
+-- Relayout every open sidekick float. Width clamps to 80 to match the minimum
+-- sidekick's open_win enforces.
 function SidekickFloat.apply()
   local f = require("sidekick.config").cli.win.float
-  local lines, cols = vim.o.lines, vim.o.columns
+  local height, row = max_vert()
+  local cols = vim.o.columns
   for _, w in ipairs(vim.api.nvim_list_wins()) do
     local cfg = vim.api.nvim_win_get_config(w)
     if vim.w[w].sidekick_cli ~= nil and cfg.relative ~= "" then
-      cfg.width = math.floor(cols * f.width)
-      cfg.height = math.floor(lines * f.height)
-      cfg.row = math.floor((lines - cfg.height) * f.row)
+      cfg.width = math.max(math.floor(cols * f.width), 80)
+      cfg.height = height
+      cfg.row = row
       cfg.col = math.floor((cols - cfg.width) * f.col)
       vim.api.nvim_win_set_config(w, cfg)
     end
@@ -92,15 +103,13 @@ function SidekickFloat.tile(name)
   end
 end
 
--- Snap the float to a left or right sidebar. Both use the sidebar preset's size;
--- the left variant mirrors the right's edge padding (col = 1 - sidebar.col) so
--- the gap from the screen edge is identical on both sides.
+-- Snap the float to a left or right sidebar. Both use the sidebar preset's
+-- width; the left variant mirrors the right's edge padding (col = 1 - sidebar.col)
+-- so the gap from the screen edge is identical on both sides.
 function SidekickFloat.side(dir)
   local sb = SidekickFloat.presets.sidebar
   set_float({
     width = sb.width,
-    height = sb.height,
-    row = sb.row,
     col = dir == "left" and (1 - sb.col) or sb.col,
   })
 end
@@ -134,8 +143,8 @@ do
   local applied_width = nil -- sidekick width we set programmatically; not a drag
 
   -- sidekick SPLIT windows only (floats excluded via relative == ""). The ratio
-  -- tracking / width reapply below is split-specific; floats are relaid out from
-  -- their own fractions by SidekickFloat.apply().
+  -- tracking / width reapply below is split-specific; floats are relaid out by
+  -- SidekickFloat.apply().
   local function sidekick_wins()
     return vim.tbl_filter(function(w)
       return vim.w[w].sidekick_cli ~= nil and vim.api.nvim_win_get_config(w).relative == ""
@@ -174,7 +183,7 @@ do
     group = group,
     callback = function()
       applied_columns = vim.o.columns
-      -- floats: recompute from fractions so the sidebar keeps ratio + position
+      -- floats: recompute so the sidebar keeps its width ratio and full height
       SidekickFloat.apply()
       -- splits: restore the tracked width ratio, then equalize the others
       local wins = sidekick_wins()
@@ -192,22 +201,25 @@ do
     end,
   })
 
-  -- sidekick opens with an explicit width, so Neovim skips equalalways and the
-  -- other windows come out uneven. Equalize whenever the split shows... Only
-  -- splits take layout space; a float sits above the grid, so equalizing on a
-  -- float open/close would needlessly reset hand-sized editor splits. Guard both
-  -- handlers on relative == "". BufWinEnter can't assume the current window is
-  -- the sidekick one (it opens with enter=false), so resolve the buffer's window.
+  -- On show: a split opens with an explicit width, so Neovim skips equalalways
+  -- and the other windows come out uneven — equalize them. A float gets painted
+  -- by open_win from the config fractions — snap it to the exact geometry.
+  -- BufWinEnter can't assume the current window is the sidekick one (it opens
+  -- with enter=false), so resolve the buffer's window.
   vim.api.nvim_create_autocmd("BufWinEnter", {
     group = group,
     callback = function(ev)
+      if vim.bo[ev.buf].filetype ~= "sidekick_terminal" then
+        return
+      end
       local win = vim.fn.bufwinid(ev.buf)
-      if
-        vim.bo[ev.buf].filetype == "sidekick_terminal"
-        and win ~= -1
-        and vim.api.nvim_win_get_config(win).relative == ""
-      then
+      if win == -1 then
+        return
+      end
+      if vim.api.nvim_win_get_config(win).relative == "" then
         vim.schedule(equalize)
+      else
+        vim.schedule(SidekickFloat.apply)
       end
     end,
   })
@@ -256,10 +268,12 @@ return {
           split = { width = 0.5 },
           -- floating layout as a right-anchored sidebar. col=0.96 leaves a small
           -- gap from the right edge (col is a fraction of the leftover space,
-          -- 1=flush right); width/height are editor fractions. border makes it
-          -- readable and surfaces the " Sidekick " title (a minimal window
-          -- hides the title without one).
-          float = { width = 0.4, height = 0.92, col = 0.96, row = 0.3 },
+          -- 1=flush right). height/row only shape sidekick's first paint before
+          -- the BufWinEnter hook above snaps the exact geometry; row=0 keeps
+          -- that one-frame jump imperceptible. border makes it readable and
+          -- surfaces the " Sidekick " title (a minimal window hides the title
+          -- without one).
+          float = { width = 0.4, height = 0.92, col = 0.96, row = 0 },
           -- Show the running tool in the float border title (e.g. "Sidekick ·
           -- Claude Code" instead of a static " Sidekick "). Runs per-terminal at
           -- init on the snapshot open_win reads, so each tool gets its own title.
