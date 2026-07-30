@@ -54,6 +54,18 @@ function SidekickFloat.apply()
   local f = require("sidekick.config").cli.win.float
   local height, row = max_vert()
   local cols = vim.o.columns
+  -- Persist the exact height as absolute rows (sidekick's open_win treats
+  -- values > 1 as absolute) into the config AND every live terminal's opts
+  -- snapshot, so the next open starts at the final geometry. Without this,
+  -- reopening a hidden float resized the PTY (fraction-derived height vs
+  -- this exact height), and the CLI redrawing mid-resize — with no
+  -- synchronized-output support in nvim's terminal — garbled the screen.
+  f.height = height
+  for _, t in pairs(require("sidekick.cli.terminal").terminals) do
+    if t.opts.float then
+      t.opts.float.height = height
+    end
+  end
   for _, w in ipairs(vim.api.nvim_list_wins()) do
     local cfg = vim.api.nvim_win_get_config(w)
     if vim.w[w].sidekick_cli ~= nil and cfg.relative ~= "" then
