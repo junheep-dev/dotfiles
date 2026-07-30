@@ -118,7 +118,7 @@ vim.api.nvim_create_autocmd("FileType", {
 -- close some filetypes with <q>
 vim.api.nvim_create_autocmd("FileType", {
   group = augroup("close_with_q"),
-  pattern = { "help", "man", "qf", "checkhealth" },
+  pattern = { "help", "man", "qf", "checkhealth", "gitsigns-blame" },
   callback = function(event)
     vim.bo[event.buf].buflisted = false
     vim.schedule(function()

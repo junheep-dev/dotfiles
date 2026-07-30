@@ -3,45 +3,6 @@
 -- mini's main branch is explicitly "beta testing phase" per its docs.
 return {
   {
-    "nvim-mini/mini.diff",
-    version = "*",
-    lazy = false,
-    -- 'sign' style (not the number-based default) so snacks.statuscolumn picks
-    -- the signs up and renders them in its right git slot
-    opts = {
-      view = { style = "sign" },
-    },
-    config = function(_, opts)
-      require("mini.diff").setup(opts)
-      -- Make the overlay read like a GitHub-style diff: reference (old) side
-      -- red, buffer (new) side green, whole lines instead of word fragments.
-      -- Linking to Diff{Delete,Add} keeps it theme-aware; the ColorScheme
-      -- autocmd re-applies it after a theme switch resets highlights, and
-      -- registering after setup() lets our links win over mini's defaults.
-      -- See mini.nvim#1319.
-      local function overlay_hl()
-        vim.api.nvim_set_hl(0, "MiniDiffOverChange", { link = "DiffDelete" })
-        vim.api.nvim_set_hl(0, "MiniDiffOverContext", { link = "DiffDelete" })
-        vim.api.nvim_set_hl(0, "MiniDiffOverChangeBuf", { link = "DiffAdd" })
-        vim.api.nvim_set_hl(0, "MiniDiffOverContextBuf", { link = "DiffAdd" })
-      end
-      vim.api.nvim_create_autocmd("ColorScheme", {
-        group = vim.api.nvim_create_augroup("mini_diff_overlay_hl", { clear = true }),
-        callback = overlay_hl,
-      })
-      overlay_hl()
-    end,
-    keys = {
-      {
-        "<leader>go",
-        function()
-          require("mini.diff").toggle_overlay()
-        end,
-        desc = "Toggle Overlay",
-      },
-    },
-  },
-  {
     "nvim-mini/mini-git",
     main = "mini.git",
     version = "*",
@@ -468,6 +429,11 @@ return {
           { mode = "n", keys = "]" },
           { mode = { "n", "x" }, keys = "g" },
           { mode = { "n", "x" }, keys = "z" },
+          { mode = { "n", "x" }, keys = "'" },
+          { mode = { "n", "x" }, keys = "`" },
+          { mode = { "n", "x" }, keys = '"' },
+          { mode = { "i", "c" }, keys = "<C-r>" },
+          { mode = "i", keys = "<C-x>" },
           { mode = "n", keys = "<C-w>" },
           { mode = "n", keys = "\\" }, -- option toggles, see keymaps.lua
         },
@@ -477,6 +443,9 @@ return {
           { mode = "n", keys = "<leader>e", desc = "+explore" },
           { mode = "n", keys = "<leader>f", desc = "+file" },
           { mode = "n", keys = "<leader>g", desc = "+git" },
+          { mode = "n", keys = "<leader>gh", desc = "+hunk" },
+          { mode = "x", keys = "<leader>g", desc = "+git" },
+          { mode = "x", keys = "<leader>gh", desc = "+hunk" },
           { mode = "n", keys = "<leader>l", desc = "+language" },
           { mode = "n", keys = "<leader>o", desc = "+other" },
           { mode = "n", keys = "<leader>s", desc = "+session" },
@@ -484,10 +453,14 @@ return {
           miniclue.gen_clues.square_brackets(),
           miniclue.gen_clues.g(),
           miniclue.gen_clues.z(),
-          miniclue.gen_clues.windows(),
+          miniclue.gen_clues.marks(),
+          miniclue.gen_clues.registers({ show_contents = true }),
+          miniclue.gen_clues.builtin_completion(),
+          miniclue.gen_clues.windows({ submode_resize = true }),
         },
         window = {
           delay = 200,
+          config = { width = "auto" },
         },
       })
 
