@@ -57,9 +57,8 @@ function SidekickFloat.apply()
   -- Persist the exact height as absolute rows (sidekick's open_win treats
   -- values > 1 as absolute) into the config AND every live terminal's opts
   -- snapshot, so the next open starts at the final geometry. Without this,
-  -- reopening a hidden float resized the PTY (fraction-derived height vs
-  -- this exact height), and the CLI redrawing mid-resize — with no
-  -- synchronized-output support in nvim's terminal — garbled the screen.
+  -- reopening a hidden float resized the PTY from the fraction-derived height
+  -- to this exact height and forced the CLI to reflow immediately after open.
   f.height = height
   for _, t in pairs(require("sidekick.cli.terminal").terminals) do
     if t.opts.float then
@@ -153,6 +152,7 @@ do
   local ratio = nil -- last known sidekick width / columns; nil until first seen
   local applied_columns = vim.o.columns
   local applied_width = nil -- sidekick width we set programmatically; not a drag
+  local resize_generation = 0
 
   -- sidekick SPLIT windows only (floats excluded via relative == ""). The ratio
   -- tracking / width reapply below is split-specific; floats are relaid out by
@@ -167,6 +167,35 @@ do
   -- so `wincmd =` keeps its pinned width and equalizes only the other windows.
   local function equalize()
     vim.cmd("wincmd =")
+  end
+
+  local function relayout()
+    applied_columns = vim.o.columns
+    SidekickFloat.apply()
+
+    local wins = sidekick_wins()
+    if #wins == 0 then
+      return
+    end
+
+    local r = ratio or (require("sidekick.config").cli.win.split.width or 0.5)
+    if r <= 1 then
+      applied_width = math.floor(vim.o.columns * r)
+      for _, w in ipairs(wins) do
+        vim.api.nvim_win_set_width(w, applied_width)
+      end
+    end
+    equalize()
+  end
+
+  local function schedule_relayout()
+    resize_generation = resize_generation + 1
+    local generation = resize_generation
+    vim.defer_fn(function()
+      if generation == resize_generation then
+        relayout()
+      end
+    end, 80)
   end
 
   -- Remember the ratio only on genuine manual resizes (editor width unchanged).
@@ -193,24 +222,7 @@ do
   -- of ordering against the generic VimResized `wincmd =` autocmd.
   vim.api.nvim_create_autocmd("VimResized", {
     group = group,
-    callback = function()
-      applied_columns = vim.o.columns
-      -- floats: recompute so the sidebar keeps its width ratio and full height
-      SidekickFloat.apply()
-      -- splits: restore the tracked width ratio, then equalize the others
-      local wins = sidekick_wins()
-      if #wins == 0 then
-        return -- no sidekick split; let the generic resize autocmd handle it
-      end
-      local r = ratio or (require("sidekick.config").cli.win.split.width or 0.5)
-      if r <= 1 then -- fraction; absolute widths are left to sidekick
-        applied_width = math.floor(vim.o.columns * r)
-        for _, w in ipairs(wins) do
-          vim.api.nvim_win_set_width(w, applied_width)
-        end
-      end
-      equalize()
-    end,
+    callback = schedule_relayout,
   })
 
   -- On show: a split opens with an explicit width, so Neovim skips equalalways
@@ -280,16 +292,16 @@ return {
           split = { width = 0.5 },
           -- floating layout as a right-anchored sidebar. col=0.96 leaves a small
           -- gap from the right edge (col is a fraction of the leftover space,
-          -- 1=flush right). height/row only shape sidekick's first paint before
-          -- the BufWinEnter hook above snaps the exact geometry; row=0 keeps
-          -- that one-frame jump imperceptible. border makes it readable and
-          -- surfaces the " Sidekick " title (a minimal window hides the title
-          -- without one).
+          -- 1=flush right). The terminal config callback replaces the initial
+          -- fractional height before open; BufWinEnter only snaps its position.
+          -- border makes it readable and surfaces the " Sidekick " title (a
+          -- minimal window hides the title without one).
           float = { width = 0.4, height = 0.92, col = 0.96, row = 0 },
           -- Show the running tool in the float border title (e.g. "Sidekick ·
           -- Claude Code" instead of a static " Sidekick "). Runs per-terminal at
           -- init on the snapshot open_win reads, so each tool gets its own title.
           config = function(terminal)
+            terminal.opts.float.height = max_vert()
             local tool = terminal.tool and terminal.tool.name
             if not tool then
               return
