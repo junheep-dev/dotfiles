@@ -23,6 +23,22 @@ local function term_nav(dir)
   end
 end
 
+-- Permalink to the current file / visual line range on the remote (GitHub, ...).
+-- `permalink` pins the URL to the last commit touching the file, so it survives
+-- later edits; gitbrowse reads the range from the visual marks itself.
+local function gitbrowse(copy)
+  return function()
+    require("snacks").gitbrowse({
+      what = "permalink",
+      notify = not copy,
+      open = copy and function(url)
+        vim.fn.setreg("+", url)
+        require("snacks").notify(url, { title = "Git Link Copied" })
+      end or nil,
+    })
+  end
+end
+
 return {
   {
     "folke/snacks.nvim",
@@ -70,6 +86,18 @@ return {
           require("snacks").lazygit()
         end,
         desc = "Lazygit",
+      },
+      {
+        "<leader>gy",
+        gitbrowse(true),
+        desc = "Yank Remote Link",
+        mode = { "n", "x" },
+      },
+      {
+        "<leader>go",
+        gitbrowse(false),
+        desc = "Open Remote Link",
+        mode = { "n", "x" },
       },
       {
         "<c-/>",
