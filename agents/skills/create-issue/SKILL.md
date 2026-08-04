@@ -1,6 +1,6 @@
 ---
 name: create-issue
-description: Create a Linear issue with the right assignment, status, and project. Use whenever asked to create an issue, sub-issue, or follow-up.
+description: Create a Linear issue with the right assignment, status, project, and labels. Use whenever asked to create an issue, sub-issue, or follow-up.
 ---
 
 Create the Linear issue, then set its fields based on how it relates to the
@@ -13,3 +13,6 @@ branch:
 - Unrelated to it: leave it unassigned in Triage.
 
 Keep the issue description factual and terse — no ceremonial headers.
+
+Always inspect the team's existing labels and apply every label that fits the
+issue. Do not create a new label unless the user explicitly asks for one.
