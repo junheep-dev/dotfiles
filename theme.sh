@@ -29,8 +29,6 @@ if [ -n "$THEME" ] && [ "$THEME" != "<<-quit" ]; then
   cp "$DOTFILES_DIR/themes/$THEME/ghostty" ~/.config/ghostty/theme
   cp "$DOTFILES_DIR/themes/$THEME/btop.theme" ~/.config/btop/themes/current.theme
 
-  "$DOTFILES_DIR/wallpaper.sh" "$THEME"
-
   tmux source ~/.tmux.conf
   pkill -SIGUSR2 ghostty
   echo "Theme changed to $THEME_DISPLAY"
