@@ -49,6 +49,31 @@ local function apply_transparency()
   end
 end
 
+-- Make diff output (`:Git diff`, `:Git log --patch`) read like `git` in the
+-- terminal, which prints plain ANSI green for `+` and red for `-` on the
+-- terminal's own background. `terminal_color_*` is that same palette as the
+-- theme publishes it, so it reproduces those colors exactly; theme diff colors
+-- are often a different, softer set. Themes that publish no palette keep their
+-- own colors, minus the background (a |vimdiff| convention git doesn't share).
+local git_diff_groups = {
+  { ts = "@diff.plus", syntax = "diffAdded", ansi = 2 },
+  { ts = "@diff.minus", syntax = "diffRemoved", ansi = 1 },
+}
+
+local function apply_git_diff_colors()
+  for _, group in ipairs(git_diff_groups) do
+    local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = group.syntax, link = false })
+    if ok then
+      hl.fg = vim.g["terminal_color_" .. group.ansi] or hl.fg
+      hl.bg = nil
+      hl.ctermbg = nil
+      pcall(vim.api.nvim_set_hl, 0, group.syntax, hl)
+    end
+    -- filetype=diff (treesitter) follows filetype=git (vim syntax)
+    pcall(vim.api.nvim_set_hl, 0, group.ts, { link = group.syntax })
+  end
+end
+
 local function active_colorscheme()
   -- re-run plugins/theme.lua fresh so a swap is picked up even if lazy has not
   -- re-imported it yet; the file's side effect sets vim.g.active_colorscheme
@@ -111,6 +136,7 @@ return {
       -- keep transparency in sync with any colorscheme change (startup, switch,
       -- or manual :colorscheme)
       vim.api.nvim_create_autocmd("ColorScheme", { callback = apply_transparency })
+      vim.api.nvim_create_autocmd("ColorScheme", { callback = apply_git_diff_colors })
       apply_theme()
       vim.api.nvim_create_autocmd("User", {
         pattern = "LazyReload",
