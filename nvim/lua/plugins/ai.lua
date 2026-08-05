@@ -25,8 +25,8 @@ vim.api.nvim_create_autocmd("User", {
 })
 -- Sidekick floating-window control: width/col come from the config fractions
 -- (col positions within the leftover space, 0=left 1=right), height/row from
--- max_vert below. Backs the <C-'> shape cycle (sidebar right/left/full).
--- Defined at startup (this file is imported eagerly for its spec).
+-- max_vert below. Backs the <C-'> shape cycle (sidebar right/left/full) when the
+-- CLI is floating. Defined at startup (this file is imported eagerly for its spec).
 _G.SidekickFloat = {}
 
 -- Two width presets: the default right sidebar and a near-full reading view.
@@ -188,6 +188,32 @@ do
     equalize()
   end
 
+  -- Split width control: two presets flipped with <C-'>. The first is the
+  -- default (and what a hand-dragged width snaps back to); the second narrows
+  -- the CLI when the editor needs the room.
+  _G.SidekickSplit = { presets = { 0.5, 0.4 } }
+
+  -- Apply a width ratio to the config AND every terminal's opts snapshot (that
+  -- snapshot is what open_win reads, so a hide/show keeps the width), then relay
+  -- out the live split. Seeding `ratio` keeps it across nvim resizes.
+  function SidekickSplit.set(r)
+    ratio = r
+    require("sidekick.config").cli.win.split.width = r
+    for _, t in pairs(require("sidekick.cli.terminal").terminals) do
+      if t.opts.split then
+        t.opts.split.width = r
+      end
+    end
+    relayout()
+  end
+
+  -- Flip between the presets; a hand-dragged width snaps back to the first one.
+  function SidekickSplit.toggle()
+    local p = SidekickSplit.presets
+    local current = ratio or require("sidekick.config").cli.win.split.width
+    SidekickSplit.set(math.abs(current - p[1]) < 0.01 and p[2] or p[1])
+  end
+
   local function schedule_relayout()
     resize_generation = resize_generation + 1
     local generation = resize_generation
@@ -286,9 +312,9 @@ return {
       nes = { enabled = false },
       cli = {
         win = {
-          -- open as a floating sidebar by default (sidekick's default is "right"
-          -- split); <c-,> still toggles to a split when wanted.
-          layout = "float",
+          -- open as a right split taking half the editor; <c-,> toggles to the
+          -- floating sidebar, <c-'> flips the split between the width presets.
+          layout = "right",
           split = { width = 0.5 },
           -- floating layout as a right-anchored sidebar. col=0.96 leaves a small
           -- gap from the right edge (col is a fraction of the leftover space,
@@ -413,13 +439,24 @@ return {
         mode = { "n", "t" },
       },
       {
-        -- Cycle the float shape (right sidebar -> left sidebar -> full) from any
-        -- mode, so it's reachable while typing in the terminal without <leader>.
+        -- Reshape the CLI window from any mode, so it's reachable while typing
+        -- in the terminal without <leader>: a split flips between its width
+        -- presets, a float cycles its shape (right sidebar -> left -> full).
         "<c-'>",
         function()
-          SidekickFloat.cycle()
+          require("sidekick.cli.state").with(function(state)
+            local t = state and state.terminal
+            if not t then
+              return
+            end
+            if t.opts.layout == "float" then
+              SidekickFloat.cycle()
+            else
+              SidekickSplit.toggle()
+            end
+          end, { filter = { installed = true } })
         end,
-        desc = "Sidekick Cycle Float Shape",
+        desc = "Sidekick Reshape Window",
         mode = { "n", "t" },
       },
       {
