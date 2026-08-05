@@ -1,7 +1,5 @@
--- Keep files out of the sidekick terminal window. It is pinned with winfixbuf
--- (see cli.win.wo below), so opening a file there would fail. When a picker is
--- launched while the CLI is focused, mini.pick's target window is that pinned
--- split; retarget a real editor window on MiniPickStart so the file lands there.
+-- The sidekick terminal is pinned with winfixbuf, so a picker launched while it
+-- is focused would target it and fail to open the file. Retarget a real window.
 vim.api.nvim_create_autocmd("User", {
   pattern = "MiniPickStart",
   group = vim.api.nvim_create_augroup("junheep_sidekick_pick", { clear = true }),
@@ -23,24 +21,11 @@ vim.api.nvim_create_autocmd("User", {
     end
   end,
 })
--- Sidekick floating-window control: width/col come from the config fractions
--- (col positions within the leftover space, 0=left 1=right), height/row from
--- max_vert below. Backs the <C-'> shape cycle (sidebar right/left/full) when the
--- CLI is floating. Defined at startup (this file is imported eagerly for its spec).
-_G.SidekickFloat = {}
+local SidekickFloat = {}
 
--- Two width presets: the default right sidebar and a near-full reading view.
--- Only width/col vary; height/row always come from max_vert.
-SidekickFloat.presets = {
-  sidebar = { width = 0.4, col = 0.96 },
-  full = { width = 0.92, col = 0.5 },
-}
-
--- Max float height and its row: vim.o.lines minus the rows that must stay
--- visible — tabline above, statusline + cmdline below — and the 2 rows
--- winborder draws outside `height`. A fraction-based height can't do this: the
--- reserved rows are a fixed cost, so on small displays the fractional leftover
--- is too thin and the float covers the bars.
+-- Tallest float that still leaves the tabline, the statusline/cmdline and the
+-- two rows winborder draws outside `height` visible. A height fraction can't do
+-- this: those rows are a fixed cost, so small displays end up covered.
 local function max_vert()
   local tabline = vim.o.showtabline == 2 or (vim.o.showtabline == 1 and #vim.api.nvim_list_tabpages() > 1)
   local top = tabline and 1 or 0
@@ -48,17 +33,13 @@ local function max_vert()
   return math.max(vim.o.lines - top - bottom - 2, 10), top
 end
 
--- Relayout every open sidekick float. Width clamps to 80 to match the minimum
--- sidekick's open_win enforces.
+-- Relayout every open float. Width clamps to 80, sidekick's own minimum.
 function SidekickFloat.apply()
   local f = require("sidekick.config").cli.win.float
   local height, row = max_vert()
   local cols = vim.o.columns
-  -- Persist the exact height as absolute rows (sidekick's open_win treats
-  -- values > 1 as absolute) into the config AND every live terminal's opts
-  -- snapshot, so the next open starts at the final geometry. Without this,
-  -- reopening a hidden float resized the PTY from the fraction-derived height
-  -- to this exact height and forced the CLI to reflow immediately after open.
+  -- Written back as absolute rows (open_win reads > 1 as absolute) so a reopen
+  -- starts at this height instead of resizing the PTY right after opening.
   f.height = height
   for _, t in pairs(require("sidekick.cli.terminal").terminals) do
     if t.opts.float then
@@ -77,94 +58,24 @@ function SidekickFloat.apply()
   end
 end
 
--- Merge float-fraction overrides into the config, switch the CLI to the floating
--- layout if it is currently a split (or open it), and apply the geometry live.
-local function set_float(overrides)
-  local Config = require("sidekick.config")
-  for k, v in pairs(overrides) do
-    Config.cli.win.float[k] = v
-  end
-  require("sidekick.cli.state").with(function(state)
-    local t = state and state.terminal
-    if not t then
-      return
-    end
-    t.opts.float = vim.deepcopy(Config.cli.win.float) -- sync the terminal snapshot
-    if t.opts.layout ~= "float" then
-      t.opts.layout = "float"
-      if t:is_open() then
-        t:hide()
-      end
-      t:show()
-      t:focus()
-    elseif t:is_open() then
-      SidekickFloat.apply()
-    else
-      t:show()
-      t:focus()
-    end
-  end, { filter = { installed = true } })
-end
-
--- Snap the float to a named size preset (sidebar | full).
-function SidekickFloat.tile(name)
-  local p = SidekickFloat.presets[name]
-  if p then
-    set_float(p)
-  end
-end
-
--- Snap the float to a left or right sidebar. Both use the sidebar preset's
--- width; the left variant mirrors the right's edge padding (col = 1 - sidebar.col)
--- so the gap from the screen edge is identical on both sides.
-function SidekickFloat.side(dir)
-  local sb = SidekickFloat.presets.sidebar
-  set_float({
-    width = sb.width,
-    col = dir == "left" and (1 - sb.col) or sb.col,
-  })
-end
-
--- Cross-mode float-shape cycle: right sidebar -> left sidebar -> full -> wrap.
--- Bound to <C-'> so one key (n+t) reshapes the float without a <leader> prefix.
-SidekickFloat._shape = 0
-function SidekickFloat.cycle()
-  local steps = {
-    function()
-      SidekickFloat.side("right")
-    end,
-    function()
-      SidekickFloat.side("left")
-    end,
-    function()
-      SidekickFloat.tile("full")
-    end,
-  }
-  SidekickFloat._shape = (SidekickFloat._shape % #steps) + 1
-  steps[SidekickFloat._shape]()
-end
--- Track the sidekick split's width as a fraction of the editor, and reapply it
--- whenever Neovim itself resizes. sidekick pins the split with winfixwidth, so
--- on a VimResized it keeps its absolute width and the drift breaks the ratio.
--- Capture manual drags (columns unchanged) so a hand-tuned ratio survives too.
+-- Hold the split at a fixed fraction of the editor. sidekick pins it with
+-- winfixwidth, so an nvim resize leaves its absolute width and drifts the ratio;
+-- a manual drag (columns unchanged) redefines the ratio instead.
 do
   local group = vim.api.nvim_create_augroup("junheep_sidekick_resize", { clear = true })
-  local ratio = nil -- last known sidekick width / columns; nil until first seen
+  local ratio = nil
   local applied_columns = vim.o.columns
-  local applied_width = nil -- sidekick width we set programmatically; not a drag
+  local applied_width = nil -- what we set ourselves, to tell it from a drag
   local resize_generation = 0
 
-  -- sidekick SPLIT windows only (floats excluded via relative == ""). The ratio
-  -- tracking / width reapply below is split-specific; floats are relaid out by
-  -- SidekickFloat.apply().
+  -- splits only; floats are relaid out by SidekickFloat.apply
   local function sidekick_wins()
     return vim.tbl_filter(function(w)
       return vim.w[w].sidekick_cli ~= nil and vim.api.nvim_win_get_config(w).relative == ""
     end, vim.api.nvim_list_wins())
   end
 
-  -- Share the editor evenly around the sidekick split. sidekick is winfixwidth,
-  -- so `wincmd =` keeps its pinned width and equalizes only the other windows.
+  -- winfixwidth keeps sidekick out of this, so only the editor windows even out
   local function equalize()
     vim.cmd("wincmd =")
   end
@@ -188,32 +99,6 @@ do
     equalize()
   end
 
-  -- Split width control: two presets flipped with <C-'>. The first is the
-  -- default (and what a hand-dragged width snaps back to); the second narrows
-  -- the CLI when the editor needs the room.
-  _G.SidekickSplit = { presets = { 0.5, 0.4 } }
-
-  -- Apply a width ratio to the config AND every terminal's opts snapshot (that
-  -- snapshot is what open_win reads, so a hide/show keeps the width), then relay
-  -- out the live split. Seeding `ratio` keeps it across nvim resizes.
-  function SidekickSplit.set(r)
-    ratio = r
-    require("sidekick.config").cli.win.split.width = r
-    for _, t in pairs(require("sidekick.cli.terminal").terminals) do
-      if t.opts.split then
-        t.opts.split.width = r
-      end
-    end
-    relayout()
-  end
-
-  -- Flip between the presets; a hand-dragged width snaps back to the first one.
-  function SidekickSplit.toggle()
-    local p = SidekickSplit.presets
-    local current = ratio or require("sidekick.config").cli.win.split.width
-    SidekickSplit.set(math.abs(current - p[1]) < 0.01 and p[2] or p[1])
-  end
-
   local function schedule_relayout()
     resize_generation = resize_generation + 1
     local generation = resize_generation
@@ -224,18 +109,15 @@ do
     end, 80)
   end
 
-  -- Remember the ratio only on genuine manual resizes (editor width unchanged).
   vim.api.nvim_create_autocmd("WinResized", {
     group = group,
     callback = function()
       if vim.o.columns ~= applied_columns then
-        return -- this WinResized is a side effect of an nvim resize; ignore
+        return -- side effect of an nvim resize, not a drag
       end
       for _, w in ipairs(sidekick_wins()) do
         local width = vim.api.nvim_win_get_width(w)
         if width ~= applied_width then
-          -- a genuine manual drag, not the echo of our own set_width; capturing
-          -- the floored width we just applied would drift the ratio each resize
           ratio = width / vim.o.columns
           applied_width = nil
         end
@@ -243,19 +125,14 @@ do
     end,
   })
 
-  -- On an nvim resize, restore the sidekick ratio, then re-equalize the editor
-  -- windows. Doing the equalize here makes the final layout correct regardless
-  -- of ordering against the generic VimResized `wincmd =` autocmd.
   vim.api.nvim_create_autocmd("VimResized", {
     group = group,
     callback = schedule_relayout,
   })
 
-  -- On show: a split opens with an explicit width, so Neovim skips equalalways
-  -- and the other windows come out uneven — equalize them. A float gets painted
-  -- by open_win from the config fractions — snap it to the exact geometry.
-  -- BufWinEnter can't assume the current window is the sidekick one (it opens
-  -- with enter=false), so resolve the buffer's window.
+  -- A split opens with an explicit width, so nvim skips equalalways and leaves
+  -- the other windows uneven; a float opens from the config fractions and needs
+  -- snapping. It opens with enter=false, so resolve the window from the buffer.
   vim.api.nvim_create_autocmd("BufWinEnter", {
     group = group,
     callback = function(ev)
@@ -274,7 +151,6 @@ do
     end,
   })
 
-  -- ...or is closed. The window is still valid here, so its config is readable.
   vim.api.nvim_create_autocmd("WinClosed", {
     group = group,
     callback = function(ev)
@@ -312,20 +188,13 @@ return {
       nes = { enabled = false },
       cli = {
         win = {
-          -- open as a right split taking half the editor; <c-,> toggles to the
-          -- floating sidebar, <c-'> flips the split between the width presets.
           layout = "right",
           split = { width = 0.5 },
-          -- floating layout as a right-anchored sidebar. col=0.96 leaves a small
-          -- gap from the right edge (col is a fraction of the leftover space,
-          -- 1=flush right). The terminal config callback replaces the initial
-          -- fractional height before open; BufWinEnter only snaps its position.
-          -- border makes it readable and surfaces the " Sidekick " title (a
-          -- minimal window hides the title without one).
+          -- right-anchored sidebar; col is a fraction of the leftover space, so
+          -- 0.96 leaves a small gap from the edge. height is replaced below.
           float = { width = 0.4, height = 0.92, col = 0.96, row = 0 },
-          -- Show the running tool in the float border title (e.g. "Sidekick ·
-          -- Claude Code" instead of a static " Sidekick "). Runs per-terminal at
-          -- init on the snapshot open_win reads, so each tool gets its own title.
+          -- runs per-terminal on the snapshot open_win reads, so each tool gets
+          -- its own border title
           config = function(terminal)
             terminal.opts.float.height = max_vert()
             local tool = terminal.tool and terminal.tool.name
@@ -336,13 +205,10 @@ return {
             local label = labels[tool] or tool:sub(1, 1):upper() .. tool:sub(2)
             terminal.opts.float.title = " Sidekick - " .. label .. " "
           end,
-          -- pin the terminal so <C-o>/<C-i> (jumplist) and stray :edits can't
-          -- replace it; the MiniPickStart hook above keeps pickers off it too
+          -- pin the terminal so the jumplist and stray :edits can't replace it
           wo = { winfixbuf = true },
           keys = {
-            -- sidekick binds <C-p> (terminal mode) to its prompt picker, which
-            -- shadows the CLI's own <C-p> history nav. Disable it so <C-p>
-            -- passes through to the CLI.
+            -- sidekick's prompt picker shadows the CLI's own <C-p> history nav
             prompt = false,
           },
         },
@@ -352,70 +218,32 @@ return {
       },
     },
     keys = {
+      -- Window control is on ctrl chords so it works while typing in the CLI;
+      -- everything else sits under <leader>a.
       {
+        -- cli.toggle() verbatim except for the final focus(), which forces
+        -- insert mode: set_current_win lets sidekick's WinEnter restore the
+        -- mode the terminal was hidden in.
         "<c-.>",
         function()
-          require("sidekick.cli").toggle({ filter = { installed = true } })
-        end,
-        desc = "Sidekick Toggle CLI",
-        mode = { "n", "t", "i", "x" },
-      },
-      {
-        "<leader>as",
-        function()
-          require("sidekick.cli").select({ filter = { installed = true } })
-        end,
-        desc = "Select CLI",
-      },
-      {
-        "<leader>ad",
-        function()
-          require("sidekick.cli").close()
-        end,
-        desc = "Detach a CLI Session",
-      },
-      {
-        "<leader>ac",
-        function()
-          require("sidekick.cli").toggle({ name = "claude", focus = true })
-        end,
-        desc = "Sidekick Toggle Claude",
-      },
-      {
-        "<leader>aC",
-        function()
-          require("sidekick.cli").toggle({ name = "claude_continue", focus = true })
-        end,
-        desc = "Sidekick Start Claude --continue",
-      },
-      {
-        "<c-,>",
-        function()
-          require("sidekick.cli.state").with(function(state)
+          require("sidekick.cli.state").with(function(state, attached)
             local t = state and state.terminal
             if not t then
               return
             end
-            -- flip between floating and the right split, then reopen in place.
-            -- open_win() re-reads opts.layout, so hide->show swaps the window
-            -- while keeping the CLI process (and its session) alive.
-            t.opts.layout = t.opts.layout == "float" and "right" or "float"
-            t:hide()
-            t:show()
-            t:focus()
-          end, { filter = { installed = true } })
+            if not attached then
+              t:toggle()
+            end
+            if t:is_open() and t:is_running() then
+              vim.api.nvim_set_current_win(t.win)
+            end
+          end, { attach = true, filter = { installed = true } })
         end,
-        desc = "Sidekick Toggle Layout",
-        mode = { "n", "t" },
+        desc = "Toggle CLI",
+        mode = { "n", "t", "i", "x" },
       },
       {
-        -- Toggle focus in/out of the CLI. Works from terminal mode too, so you
-        -- can drop back to the editor and jump back in without reaching for the
-        -- <leader> maps. Reimplements sidekick.cli.focus() instead of calling it
-        -- directly: that version always startinsert()s on focus, forcing insert
-        -- mode even if the terminal was last left in normal mode. Just moving
-        -- the current window (like <C-h>/<C-l> window nav already does) lets the
-        -- terminal's own WinEnter autocmd restore whichever mode it was left in.
+        -- same reason as <c-.>: cli.focus() would startinsert() on the way in
         "<c-;>",
         function()
           require("sidekick.cli.state").with(function(state)
@@ -435,29 +263,55 @@ return {
             show = true,
           })
         end,
-        desc = "Sidekick Focus Toggle",
+        desc = "Toggle Focus",
         mode = { "n", "t" },
       },
       {
-        -- Reshape the CLI window from any mode, so it's reachable while typing
-        -- in the terminal without <leader>: a split flips between its width
-        -- presets, a float cycles its shape (right sidebar -> left -> full).
-        "<c-'>",
+        "<c-,>",
         function()
           require("sidekick.cli.state").with(function(state)
             local t = state and state.terminal
             if not t then
               return
             end
-            if t.opts.layout == "float" then
-              SidekickFloat.cycle()
-            else
-              SidekickSplit.toggle()
-            end
+            -- open_win() re-reads opts.layout, so hide->show swaps the window
+            -- while the CLI process (and its session) stays alive
+            t.opts.layout = t.opts.layout == "float" and "right" or "float"
+            t:hide()
+            t:show()
+            t:focus()
           end, { filter = { installed = true } })
         end,
-        desc = "Sidekick Reshape Window",
+        desc = "Toggle Layout (float/split)",
         mode = { "n", "t" },
+      },
+      {
+        "<leader>ac",
+        function()
+          require("sidekick.cli").toggle({ name = "claude", focus = true })
+        end,
+        desc = "Claude",
+      },
+      {
+        "<leader>aC",
+        function()
+          require("sidekick.cli").toggle({ name = "claude_continue", focus = true })
+        end,
+        desc = "Claude --continue",
+      },
+      {
+        "<leader>as",
+        function()
+          require("sidekick.cli").select({ filter = { installed = true } })
+        end,
+        desc = "Select CLI",
+      },
+      {
+        "<leader>ad",
+        function()
+          require("sidekick.cli").close()
+        end,
+        desc = "Detach Session",
       },
       {
         "<leader>at",
@@ -480,7 +334,7 @@ return {
           require("sidekick.cli").send({ msg = "{selection}" })
         end,
         mode = { "x" },
-        desc = "Send Visual Selection",
+        desc = "Send Selection",
       },
     },
   },
