@@ -4,9 +4,6 @@ window-height = 46
 window-padding-x = 12
 window-padding-y = 12,8
 
-background-opacity = 0.9
-background-blur = true
-
 shell-integration-features = no-cursor
 
 macos-option-as-alt = true
