@@ -6,49 +6,6 @@
 -- change_detection watches it: swapping it on disk fires `User LazyReload`, and
 -- the manager below re-applies the colorscheme live -- no restart needed.
 
--- Highlight groups whose background is stripped so the terminal shows through.
--- Scoped to our stack (core UI + mini.nvim floats); no neotree/telescope here.
-local transparent_groups = {
-  "Normal",
-  "NormalNC",
-  "NormalFloat",
-  "FloatBorder",
-  "FloatTitle",
-  "SignColumn",
-  "LineNr",
-  "CursorLineNr",
-  "EndOfBuffer",
-  "FoldColumn",
-  "Folded",
-  -- mini.nvim floats
-  "MiniFilesNormal",
-  "MiniFilesBorder",
-  "MiniFilesTitle",
-  "MiniPickNormal",
-  "MiniPickBorder",
-  "MiniPickPrompt",
-  "MiniNotifyNormal",
-  "MiniNotifyBorder",
-  -- neo-tree sidebar (+ float mode)
-  "NeoTreeNormal",
-  "NeoTreeNormalNC",
-  "NeoTreeEndOfBuffer",
-  "NeoTreeFloatNormal",
-  "NeoTreeFloatBorder",
-  "NeoTreeFloatTitle",
-}
-
-local function apply_transparency()
-  for _, name in ipairs(transparent_groups) do
-    local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = name, link = false })
-    if ok then
-      hl.bg = nil
-      hl.ctermbg = nil
-      pcall(vim.api.nvim_set_hl, 0, name, hl)
-    end
-  end
-end
-
 -- Make diff output (`:Git diff`, `:Git log --patch`) read like `git` in the
 -- terminal, which prints plain ANSI green for `+` and red for `-` on the
 -- terminal's own background. `terminal_color_*` is that same palette as the
@@ -133,9 +90,8 @@ return {
     lazy = false,
     priority = 1000, -- apply theme before other UI plugins load
     config = function()
-      -- keep transparency in sync with any colorscheme change (startup, switch,
+      -- keep diff colors in sync with any colorscheme change (startup, switch,
       -- or manual :colorscheme)
-      vim.api.nvim_create_autocmd("ColorScheme", { callback = apply_transparency })
       vim.api.nvim_create_autocmd("ColorScheme", { callback = apply_git_diff_colors })
       apply_theme()
       vim.api.nvim_create_autocmd("User", {
