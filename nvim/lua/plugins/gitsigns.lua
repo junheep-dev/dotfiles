@@ -7,6 +7,15 @@ return {
   "lewis6991/gitsigns.nvim",
   event = { "BufReadPre", "BufNewFile" },
   opts = {
+    -- Both tables merge with the defaults, so the kinds left out keep theirs.
+    signs = {
+      delete = { text = "" },
+      topdelete = { text = "" },
+    },
+    signs_staged = {
+      delete = { text = "" },
+      topdelete = { text = "" },
+    },
     on_attach = function(bufnr)
       local gs = require("gitsigns")
       local function map(mode, lhs, rhs, desc)
