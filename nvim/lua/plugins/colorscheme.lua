@@ -31,6 +31,23 @@ local function apply_git_diff_colors()
   end
 end
 
+-- gitsigns marks word-level regions inside its inline hunk preview. Once a hunk
+-- spans more than a couple of lines the logic has changed wholesale and those
+-- matches are noise, so hide them behind the plain added/deleted line colours.
+-- Left undefined they would fall back to TermCursor -- the cursor's reverse
+-- colours -- and speckle the preview.
+local gitsigns_inline_groups = {
+  { name = "GitSignsAddInline", to = "GitSignsAddPreview" },
+  { name = "GitSignsChangeInline", to = "GitSignsAddPreview" },
+  { name = "GitSignsDeleteInline", to = "GitSignsDeleteVirtLn" },
+}
+
+local function apply_gitsigns_inline_colors()
+  for _, group in ipairs(gitsigns_inline_groups) do
+    pcall(vim.api.nvim_set_hl, 0, group.name, { link = group.to })
+  end
+end
+
 local function active_colorscheme()
   -- re-run plugins/theme.lua fresh so a swap is picked up even if lazy has not
   -- re-imported it yet; the file's side effect sets vim.g.active_colorscheme
@@ -92,7 +109,12 @@ return {
     config = function()
       -- keep diff colors in sync with any colorscheme change (startup, switch,
       -- or manual :colorscheme)
-      vim.api.nvim_create_autocmd("ColorScheme", { callback = apply_git_diff_colors })
+      vim.api.nvim_create_autocmd("ColorScheme", {
+        callback = function()
+          apply_git_diff_colors()
+          apply_gitsigns_inline_colors()
+        end,
+      })
       apply_theme()
       vim.api.nvim_create_autocmd("User", {
         pattern = "LazyReload",
