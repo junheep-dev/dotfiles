@@ -22,6 +22,23 @@ return {
         desc = "Log Buffer",
       },
       {
+        -- <cWORD> keeps the whole `(#123)` token whatever it is wrapped in, so
+        -- the number survives wherever the cursor sits inside it. Requiring the
+        -- `#` keeps a log line's sha and date columns from matching.
+        "<leader>gp",
+        function()
+          local word = vim.fn.expand("<cWORD>")
+          local pr = word:match("#(%d+)")
+          if not pr then
+            return vim.notify("No PR number: " .. word, vim.log.levels.WARN)
+          end
+          local remote = vim.fn.systemlist({ "git", "remote", "get-url", "origin" })[1] or ""
+          local repo = remote:gsub("^git@(.-):", "https://%1/"):gsub("%.git$", "")
+          vim.ui.open(("%s/pull/%s"):format(repo, pr))
+        end,
+        desc = "Open PR",
+      },
+      {
         "<leader>gs",
         function()
           require("mini.git").show_at_cursor()
