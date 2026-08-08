@@ -205,8 +205,14 @@ return {
             local label = labels[tool] or tool:sub(1, 1):upper() .. tool:sub(2)
             terminal.opts.float.title = " Sidekick - " .. label .. " "
           end,
-          -- pin the terminal so the jumplist and stray :edits can't replace it
-          wo = { winfixbuf = true },
+          wo = {
+            -- pin the terminal so the jumplist and stray :edits can't replace it
+            winfixbuf = true,
+            -- the Term* groups (plugins/colorscheme.lua) put the CLI on the
+            -- editor background instead of NormalFloat, matching ghostty
+            winhighlight = "Normal:TermNormal,NormalNC:TermNormal,EndOfBuffer:TermNormal,SignColumn:TermNormal,"
+              .. "FloatBorder:TermFloatBorder,FloatTitle:TermFloatTitle",
+          },
           keys = {
             -- sidekick's prompt picker shadows the CLI's own <C-p> history nav
             prompt = false,

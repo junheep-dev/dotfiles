@@ -48,6 +48,31 @@ local function apply_gitsigns_inline_colors()
   end
 end
 
+-- The sidekick / snacks terminals draw on the editor background rather than
+-- NormalFloat, so a CLI looks the same here as in the terminal it would
+-- otherwise run in: themes/<name>/ghostty is cut from the same palette, so its
+-- `background` is exactly Normal's bg for every theme we ship.
+--
+-- TermNormal is the single knob. The border and title carry no background of
+-- their own -- only each theme's foreground, copied here -- so they fall through
+-- to whatever the terminal window's normal group is and follow it automatically.
+local term_float_groups = {
+  { name = "TermFloatBorder", from = "FloatBorder" },
+  { name = "TermFloatTitle", from = "FloatTitle" },
+}
+
+local function apply_terminal_colors()
+  pcall(vim.api.nvim_set_hl, 0, "TermNormal", { link = "Normal" })
+  for _, group in ipairs(term_float_groups) do
+    local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = group.from, link = false })
+    if ok then
+      hl.bg = nil
+      hl.ctermbg = nil
+      pcall(vim.api.nvim_set_hl, 0, group.name, hl)
+    end
+  end
+end
+
 local function active_colorscheme()
   -- re-run plugins/theme.lua fresh so a swap is picked up even if lazy has not
   -- re-imported it yet; the file's side effect sets vim.g.active_colorscheme
@@ -113,6 +138,7 @@ return {
         callback = function()
           apply_git_diff_colors()
           apply_gitsigns_inline_colors()
+          apply_terminal_colors()
         end,
       })
       apply_theme()

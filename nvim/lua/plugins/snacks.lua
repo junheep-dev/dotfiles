@@ -54,6 +54,14 @@ return {
       statuscolumn = { enabled = true },
       terminal = {
         win = {
+          -- same Term* groups the sidekick terminal uses (plugins/ai.lua); the
+          -- remaining mappings are snacks' own defaults, which carry no
+          -- background of their own
+          wo = {
+            winhighlight = "Normal:TermNormal,NormalNC:TermNormal,WinBar:SnacksWinBar,WinBarNC:SnacksWinBarNC,"
+              .. "FloatBorder:TermFloatBorder,FloatTitle:TermFloatTitle,FloatFooter:TermFloatTitle,"
+              .. "WinSeparator:SnacksWinSeparator",
+          },
           keys = {
             nav_h = { "<C-h>", term_nav("h"), desc = "Go to Left Window", expr = true, mode = "t" },
             nav_j = { "<C-j>", term_nav("j"), desc = "Go to Lower Window", expr = true, mode = "t" },
