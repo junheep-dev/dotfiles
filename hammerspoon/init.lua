@@ -142,6 +142,13 @@ end
 local GAP = 4
 local ULTRAWIDE_RATIO = 2.0
 
+local function framesMatch(a, b)
+  return math.abs(a.x - b.x) <= 1
+    and math.abs(a.y - b.y) <= 1
+    and math.abs(a.w - b.w) <= 1
+    and math.abs(a.h - b.h) <= 1
+end
+
 local function layoutWindow(win)
   if not win then
     return
@@ -151,16 +158,20 @@ local function layoutWindow(win)
     return
   end
   local f = screen:frame()
+  local fullFrame = { x = f.x + GAP, y = f.y + GAP, w = f.w - 2 * GAP, h = f.h - 2 * GAP }
+  local standardFrame
 
   if f.w / f.h > ULTRAWIDE_RATIO then
     local w = f.w * 0.8
-    win:setFrame({ x = f.x + (f.w - w) / 2, y = f.y + GAP, w = w, h = f.h - 2 * GAP }, 0)
+    standardFrame = { x = f.x + (f.w - w) / 2, y = f.y + GAP, w = w, h = f.h - 2 * GAP }
   else
-    win:setFrame({ x = f.x + GAP, y = f.y + GAP, w = f.w - 2 * GAP, h = f.h - 2 * GAP }, 0)
+    standardFrame = fullFrame
   end
+
+  win:setFrame(framesMatch(win:frame(), standardFrame) and fullFrame or standardFrame, 0)
 end
 
--- Apply the standard layout to the focused window (any app, anywhere).
+-- Toggle between the standard layout and the gap-padded full screen frame.
 -- Overrides Rectangle's default Maximize on the same chord.
 hs.hotkey.bind({ "alt", "ctrl" }, "return", function()
   layoutWindow(hs.window.focusedWindow())
