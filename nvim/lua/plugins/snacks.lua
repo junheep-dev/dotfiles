@@ -108,22 +108,6 @@ return {
         mode = { "n", "x" },
       },
       {
-        "<c-/>",
-        function()
-          require("snacks").terminal()
-        end,
-        desc = "Terminal",
-        mode = { "n", "t" },
-      },
-      {
-        "<c-_>",
-        function()
-          require("snacks").terminal()
-        end,
-        desc = "which_key_ignore",
-        mode = { "n", "t" },
-      },
-      {
         "<leader>tt",
         function()
           require("snacks").terminal(nil, { win = { position = "right" } })
