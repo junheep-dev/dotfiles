@@ -76,8 +76,13 @@ behind it isn't visible in the code. Never restate what the code already says.
 - Open with a 1–2 sentence summary, then bullet only the important changes — no
   headers, no minor details.
 - Never include Linear issue links; the branch name links them automatically.
+- When attaching an image to a GitHub pull request, use the `gh image`
+  extension if it is installed.
 
 ## Linear
 
 Never set an issue to "Done" by hand — merging a PR closes it automatically
 through the branch-name link.
+
+When attaching an image to a Linear issue, use the image attachment capability
+provided by the Linear tool.
