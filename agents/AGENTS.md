@@ -84,5 +84,7 @@ behind it isn't visible in the code. Never restate what the code already says.
 Never set an issue to "Done" by hand — merging a PR closes it automatically
 through the branch-name link.
 
-When attaching an image to a Linear issue, use the image attachment capability
-provided by the Linear tool.
+Unless the user explicitly asks for a separate issue attachment, upload images
+intended for an issue description or comment to Linear storage and embed the
+returned asset URL in Markdown. Do not use `attachmentCreate` for these inline
+images.
