@@ -71,14 +71,6 @@ behind it isn't visible in the code. Never restate what the code already says.
 - Body is optional — blank line after the subject, wrapped at 72. Explain what
   and why, not how.
 
-## Pull Requests
-
-- Open with a 1–2 sentence summary, then bullet only the important changes — no
-  headers, no minor details.
-- Never include Linear issue links; the branch name links them automatically.
-- When attaching an image to a GitHub pull request, use the `gh image`
-  extension if it is installed.
-
 ## Linear
 
 Never set an issue to "Done" by hand — merging a PR closes it automatically
