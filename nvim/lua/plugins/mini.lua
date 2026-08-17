@@ -15,8 +15,6 @@ return {
       { "<leader>gC", "<Cmd>Git commit --amend<CR>", desc = "Commit Amend" },
       { "<leader>gd", "<Cmd>Git diff<CR>", desc = "Diff" },
       { "<leader>gD", "<Cmd>Git diff -- %<CR>", desc = "Diff Buffer" },
-      { "<leader>gf", "<Cmd>Git log --patch --topo-order --follow -- %<CR>", desc = "Log Diff Buffer" },
-      { "<leader>gF", "<Cmd>Git log --patch --topo-order<CR>", desc = "Log Diff" },
       {
         "<leader>gl",
         [[<Cmd>Git log --pretty=format:\%h\ \%as\ │\ \%s\ <\%an> --topo-order<CR>]],
