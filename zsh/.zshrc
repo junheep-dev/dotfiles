@@ -58,3 +58,6 @@ eval "$(fzf --zsh)"
 
 # ripgrep: search hidden files (dotfiles) by default
 export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
+
+# gwt shell integration
+eval "$(command gwt shell init zsh)"
