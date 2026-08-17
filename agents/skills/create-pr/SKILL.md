@@ -26,6 +26,10 @@ asks for one.
 Never link the Linear issue. The branch name already carries the issue
 identifier, which is what links the two and closes the issue on merge.
 
+When the diff touches the UI, ask whether the PR should include screenshots
+before creating it, and wait for the answer. If it should, capture them by
+running the app when that is possible, otherwise ask the user for them.
+
 Attach images with the `gh image` extension when it is installed.
 
 Report the PR URL. Do not merge it, and do not set the Linear issue to Done.
