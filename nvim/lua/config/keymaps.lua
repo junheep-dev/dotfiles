@@ -16,6 +16,11 @@ map("n", "<C-j>", "<C-w>j", { desc = "Go to Lower Window", remap = true })
 map("n", "<C-k>", "<C-w>k", { desc = "Go to Upper Window", remap = true })
 map("n", "<C-l>", "<C-w>l", { desc = "Go to Right Window", remap = true })
 
+map("n", "<C-S-Up>", "<cmd>resize +2<cr>", { desc = "Increase Window Height" })
+map("n", "<C-S-Down>", "<cmd>resize -2<cr>", { desc = "Decrease Window Height" })
+map("n", "<C-S-Left>", "<cmd>vertical resize -2<cr>", { desc = "Decrease Window Width" })
+map("n", "<C-S-Right>", "<cmd>vertical resize +2<cr>", { desc = "Increase Window Width" })
+
 -- smart <C-w>o: nvim 0.12's :only closes floats/terminals too, so close only
 -- ordinary split windows and keep floats, terminals, and snacks/sidekick panes.
 map("n", "<C-w>o", function()

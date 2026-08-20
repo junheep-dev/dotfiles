@@ -477,7 +477,7 @@ return {
           miniclue.gen_clues.marks(),
           miniclue.gen_clues.registers({ show_contents = true }),
           miniclue.gen_clues.builtin_completion(),
-          miniclue.gen_clues.windows({ submode_resize = true }),
+          miniclue.gen_clues.windows(),
         },
         window = {
           delay = 200,
