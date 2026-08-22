@@ -4,7 +4,7 @@ window-height = 46
 window-padding-x = 12
 window-padding-y = 12,8
 
-shell-integration-features = no-cursor
+shell-integration-features = no-cursor,ssh-env,ssh-terminfo
 
 macos-option-as-alt = true
 confirm-close-surface = false
