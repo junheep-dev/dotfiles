@@ -73,8 +73,9 @@ behind it isn't visible in the code. Never restate what the code already says.
 
 ## Linear
 
-Never set an issue to "Done" by hand — merging a PR closes it automatically
-through the branch-name link.
+Do not set an issue to "Done" by hand unless the user explicitly asks for
+manual completion. Normally, merging a PR closes it automatically through the
+branch-name link.
 
 Unless the user explicitly asks for a separate issue attachment, upload images
 intended for an issue description or comment to Linear storage and embed the
