@@ -23,6 +23,12 @@ local function term_nav(dir)
   end
 end
 
+-- Same terminal as <leader>tt/tT: the id ignores window opts, so this toggles
+-- whichever shell terminal is already running.
+local function toggle_term()
+  require("snacks").terminal(nil, { win = { position = "bottom" } })
+end
+
 -- Permalink to the current file / visual line range on the remote (GitHub, ...).
 -- `permalink` pins the URL to the last commit touching the file, so it survives
 -- later edits; gitbrowse reads the range from the visual marks itself.
@@ -107,6 +113,11 @@ return {
         desc = "Open Remote Link",
         mode = { "n", "x" },
       },
+      -- ctrl+/ arrives as <c-/> or <c-_> depending on the terminal's key
+      -- encoding, so bind both. Works inside the terminal too, like the
+      -- sidekick <c-.> toggle.
+      { "<c-/>", toggle_term, desc = "Toggle Terminal", mode = { "n", "t", "i" } },
+      { "<c-_>", toggle_term, desc = "Toggle Terminal", mode = { "n", "t", "i" } },
       {
         "<leader>tt",
         function()
