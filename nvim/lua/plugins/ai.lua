@@ -279,6 +279,18 @@ return {
             if not tool then
               return
             end
+            if tool == "codex" or tool == "codex_resume" then
+              terminal.opts.keys.ctrl_slash = {
+                "<c-_>",
+                function(t)
+                  if t.job and t:is_running() then
+                    vim.api.nvim_chan_send(t.job, "\27[47;5u")
+                  end
+                end,
+                mode = "t",
+                desc = "Send Ctrl+/",
+              }
+            end
             local labels = { claude = "Claude Code", claude_continue = "Claude Code", codex_resume = "Codex" }
             local label = labels[tool] or tool:sub(1, 1):upper() .. tool:sub(2)
             terminal.opts.float.title = " Sidekick - " .. label .. " "
