@@ -99,6 +99,32 @@ local function guarded(method)
   end
 end
 
+local function toggle_cli_layout(layout)
+  return function()
+    require("sidekick.cli.state").with(function(state, attached)
+      local t = state and state.terminal
+      if not t or cli_is_alone(t) then
+        return
+      end
+      if t:is_open() and t.opts.layout == layout then
+        if not attached then
+          t:hide()
+          return
+        end
+      else
+        if t:is_open() then
+          t:hide()
+        end
+        t.opts.layout = layout
+        t:show()
+      end
+      if t:is_open() and t:is_running() then
+        vim.api.nvim_set_current_win(t.win)
+      end
+    end, { attach = true, filter = { installed = true } })
+  end
+end
+
 local SidekickFloat = {}
 
 -- Tallest float that still leaves the tabline, the statusline/cmdline and the
@@ -306,7 +332,7 @@ return {
           keys = {
             -- sidekick's prompt picker shadows the CLI's own <C-p> history nav
             prompt = false,
-            -- <c-.> belongs to the global toggle below; the other hide/blur
+            -- <c-.> belongs to the global float toggle below; the other hide/blur
             -- keys keep their key but do nothing while the CLI is alone
             hide_ctrl_dot = false,
             hide_n = { "q", guarded("hide"), mode = "n" },
@@ -325,25 +351,9 @@ return {
       -- Window control is on ctrl chords so it works while typing in the CLI;
       -- everything else sits under <leader>a.
       {
-        -- cli.toggle() verbatim except for the final focus(), which forces
-        -- insert mode: set_current_win lets sidekick's WinEnter restore the
-        -- mode the terminal was hidden in.
         "<c-.>",
-        function()
-          require("sidekick.cli.state").with(function(state, attached)
-            local t = state and state.terminal
-            if not t or cli_is_alone(t) then
-              return
-            end
-            if not attached then
-              t:toggle()
-            end
-            if t:is_open() and t:is_running() then
-              vim.api.nvim_set_current_win(t.win)
-            end
-          end, { attach = true, filter = { installed = true } })
-        end,
-        desc = "Toggle CLI",
+        toggle_cli_layout("float"),
+        desc = "Toggle CLI (float)",
         mode = { "n", "t", "i", "x" },
       },
       {
@@ -383,22 +393,9 @@ return {
       },
       {
         "<c-,>",
-        function()
-          require("sidekick.cli.state").with(function(state)
-            local t = state and state.terminal
-            if not t or cli_is_alone(t) then
-              return
-            end
-            -- open_win() re-reads opts.layout, so hide->show swaps the window
-            -- while the CLI process (and its session) stays alive
-            t.opts.layout = t.opts.layout == "float" and "right" or "float"
-            t:hide()
-            t:show()
-            t:focus()
-          end, { filter = { installed = true } })
-        end,
-        desc = "Toggle Layout (float/split)",
-        mode = { "n", "t" },
+        toggle_cli_layout("right"),
+        desc = "Toggle CLI (split)",
+        mode = { "n", "t", "i", "x" },
       },
       {
         "<leader>ac",
