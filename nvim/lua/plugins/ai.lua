@@ -19,86 +19,8 @@ vim.api.nvim_create_autocmd("User", {
         return
       end
     end
-    -- No editor window at all: the CLI was opened alone from the dashboard.
-    -- Splitting it halves it, which lands on cli.win.split.width.
-    local scratch = vim.api.nvim_create_buf(false, true)
-    MiniPick.set_picker_target_window(vim.api.nvim_open_win(scratch, false, { split = "left", win = target }))
   end,
 })
-
--- Dashboard entry points (`nvim +Claude` works too): show the CLI, then make it
--- the tab's only window. Picking a file splits it back, see the autocmd above.
-for cmd, tool in pairs({
-  Claude = "claude",
-  ClaudeContinue = "claude_continue",
-  Codex = "codex",
-  CodexResume = "codex_resume",
-}) do
-  vim.api.nvim_create_user_command(cmd, function()
-    require("sidekick.cli.state").with(function(state)
-      local t = state.terminal
-      if t and t:is_open() then
-        -- :only keeps the current window, so make sure that is the CLI
-        vim.api.nvim_set_current_win(t.win)
-        vim.cmd.only()
-      end
-    end, { attach = true, show = true, filter = { name = tool, installed = true } })
-  end, { desc = "Sidekick: " .. tool .. " (whole window)" })
-end
-
--- Deleting the last file leaves an empty buffer in its window; with only the
--- CLI left beside it, close that window so the CLI fills the tab again.
-vim.api.nvim_create_autocmd("BufDelete", {
-  group = vim.api.nvim_create_augroup("junheep_sidekick_solo", { clear = true }),
-  callback = vim.schedule_wrap(function()
-    local empty, cli = nil, false
-    for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-      if vim.api.nvim_win_get_config(w).relative == "" then
-        local buf = vim.api.nvim_win_get_buf(w)
-        if vim.w[w].sidekick_cli ~= nil then
-          cli = true
-        elseif
-          not empty
-          and vim.api.nvim_buf_get_name(buf) == ""
-          and vim.bo[buf].buftype == ""
-          and not vim.bo[buf].modified
-        then
-          empty = w
-        else
-          return -- something worth showing is still open
-        end
-      end
-    end
-    if cli and empty then
-      vim.api.nvim_win_close(empty, false)
-    end
-  end),
-})
-
--- With the CLI as the tab's only window there is nothing to toggle, hide or
--- focus away from, so the window chords below do nothing at all.
-local function cli_is_alone(t)
-  if not t:is_open() then
-    return false
-  end
-  for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-    if w ~= t.win and vim.api.nvim_win_get_config(w).relative == "" then
-      return false
-    end
-  end
-  return true
-end
-
--- Same guard for sidekick's own buffer-local keys, which shadow the global
--- chords inside the CLI buffer.
-local function guarded(method)
-  return function(t)
-    if not cli_is_alone(t) then
-      t[method](t)
-    end
-  end
-end
-
 local SidekickFloat = {}
 
 -- Tallest float that still leaves the tabline, the statusline/cmdline and the
@@ -291,7 +213,7 @@ return {
                 desc = "Send Ctrl+/",
               }
             end
-            local labels = { claude = "Claude Code", claude_continue = "Claude Code", codex_resume = "Codex" }
+            local labels = { claude = "Claude Code", claude_continue = "Claude Code" }
             local label = labels[tool] or tool:sub(1, 1):upper() .. tool:sub(2)
             terminal.opts.float.title = " Sidekick - " .. label .. " "
           end,
@@ -306,18 +228,10 @@ return {
           keys = {
             -- sidekick's prompt picker shadows the CLI's own <C-p> history nav
             prompt = false,
-            -- <c-.> belongs to the global toggle below; the other hide/blur
-            -- keys keep their key but do nothing while the CLI is alone
-            hide_ctrl_dot = false,
-            hide_n = { "q", guarded("hide"), mode = "n" },
-            hide_ctrl_q = { "<c-q>", guarded("hide"), mode = "n" },
-            hide_ctrl_z = { "<c-z>", guarded("blur"), mode = "nt" },
           },
         },
         tools = {
           claude_continue = { cmd = { "claude", "--continue" } },
-          -- `resume` without --last opens codex's own session picker
-          codex_resume = { cmd = { "codex", "resume" } },
         },
       },
     },
@@ -332,7 +246,7 @@ return {
         function()
           require("sidekick.cli.state").with(function(state, attached)
             local t = state and state.terminal
-            if not t or cli_is_alone(t) then
+            if not t then
               return
             end
             if not attached then
@@ -356,18 +270,7 @@ return {
               return
             end
             if t:is_focused() then
-              -- blur() leaves through `wincmd p`, which stays put once the
-              -- previous window is gone and then only drops the CLI out of
-              -- insert mode, so pick the window to leave to explicitly
-              local prev = vim.fn.win_getid(vim.fn.winnr("#"))
-              if prev == 0 or prev == t.win or not vim.api.nvim_win_is_valid(prev) then
-                prev = vim.tbl_filter(function(w)
-                  return w ~= t.win and vim.api.nvim_win_get_config(w).relative == ""
-                end, vim.api.nvim_tabpage_list_wins(0))[1]
-              end
-              if prev then
-                vim.api.nvim_set_current_win(prev)
-              end
+              t:blur()
             elseif t:is_running() then
               vim.api.nvim_set_current_win(t.win)
             end
@@ -386,7 +289,7 @@ return {
         function()
           require("sidekick.cli.state").with(function(state)
             local t = state and state.terminal
-            if not t or cli_is_alone(t) then
+            if not t then
               return
             end
             -- open_win() re-reads opts.layout, so hide->show swaps the window

@@ -246,27 +246,7 @@ return {
   {
     "nvim-mini/mini.starter",
     version = "*",
-    -- `items` replaces the defaults wholesale, so mini.starter's own three
-    -- sections are repeated below the AI ones.
-    opts = function()
-      local starter = require("mini.starter")
-      return {
-        items = {
-          { name = "Claude Code", action = "Claude", section = "AI" },
-          { name = "Claude Code (continue)", action = "ClaudeContinue", section = "AI" },
-          { name = "Codex", action = "Codex", section = "AI" },
-          { name = "Codex (resume)", action = "CodexResume", section = "AI" },
-          function()
-            if _G.MiniSessions == nil then
-              return {}
-            end
-            return starter.sections.sessions(5, true)()
-          end,
-          starter.sections.recent_files(5, false, false),
-          starter.sections.builtin_actions(),
-        },
-      }
-    end,
+    opts = {},
   },
   {
     "nvim-mini/mini.notify",
