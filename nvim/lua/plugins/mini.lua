@@ -246,7 +246,27 @@ return {
   {
     "nvim-mini/mini.starter",
     version = "*",
-    opts = {},
+    opts = function()
+      local starter = require("mini.starter")
+      return {
+        items = {
+          { name = "Claude Code", action = "Sidekick cli toggle name=claude focus=true", section = "AI" },
+          {
+            name = "Claude Code (continue)",
+            action = "Sidekick cli toggle name=claude_continue focus=true",
+            section = "AI",
+          },
+          { name = "Codex", action = "Sidekick cli toggle name=codex focus=true", section = "AI" },
+          {
+            name = "Codex (resume)",
+            action = "Sidekick cli toggle name=codex_resume focus=true",
+            section = "AI",
+          },
+          starter.sections.recent_files(5, true, false),
+          starter.sections.builtin_actions(),
+        },
+      }
+    end,
   },
   {
     "nvim-mini/mini.notify",

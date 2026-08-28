@@ -184,6 +184,7 @@ return {
   },
   {
     "folke/sidekick.nvim",
+    cmd = "Sidekick",
     opts = {
       nes = { enabled = false },
       cli = {
@@ -213,7 +214,7 @@ return {
                 desc = "Send Ctrl+/",
               }
             end
-            local labels = { claude = "Claude Code", claude_continue = "Claude Code" }
+            local labels = { claude = "Claude Code", claude_continue = "Claude Code", codex_resume = "Codex" }
             local label = labels[tool] or tool:sub(1, 1):upper() .. tool:sub(2)
             terminal.opts.float.title = " Sidekick - " .. label .. " "
           end,
@@ -232,6 +233,7 @@ return {
         },
         tools = {
           claude_continue = { cmd = { "claude", "--continue" } },
+          codex_resume = { cmd = { "codex", "resume" } },
         },
       },
     },
