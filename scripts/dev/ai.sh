@@ -6,13 +6,43 @@ print_step "Install Claude Code"
 curl -fsSL https://claude.ai/install.sh | bash
 
 print_step "Create configuration"
-mkdir -p $HOME/.claude/hooks
-cp "$DOTFILES_DIR/claude/settings.json" "$HOME/.claude/settings.json"
+mkdir -p "$HOME/.local/bin"
+ln -sf "$DOTFILES_DIR/agents/hooks/agent-status" "$HOME/.local/bin/agent-status"
+mkdir -p "$HOME/.claude/hooks"
+claude_settings="$HOME/.claude/settings.json"
+claude_settings_tmp=$(mktemp "$HOME/.claude/settings.XXXXXX")
+if [[ -f "$claude_settings" ]]; then
+  if ! jq -s '
+    .[0] as $current
+    | .[1] as $managed
+    | $current * $managed
+    | .hooks = $managed.hooks
+  ' "$claude_settings" "$DOTFILES_DIR/claude/settings.json" >"$claude_settings_tmp"; then
+    rm "$claude_settings_tmp"
+    print_error "Failed to merge Claude Code settings"
+    return 1
+  fi
+else
+  if ! cp "$DOTFILES_DIR/claude/settings.json" "$claude_settings_tmp"; then
+    rm "$claude_settings_tmp"
+    print_error "Failed to prepare Claude Code settings"
+    return 1
+  fi
+fi
+if ! mv "$claude_settings_tmp" "$claude_settings"; then
+  rm -f "$claude_settings_tmp"
+  print_error "Failed to install Claude Code settings"
+  return 1
+fi
 ln -sf "$DOTFILES_DIR/agents/AGENTS.md" "$HOME/.claude/CLAUDE.md"
-ln -sf "$DOTFILES_DIR/claude/hooks/notify.sh" "$HOME/.claude/hooks/notify.sh"
-ln -sf "$DOTFILES_DIR/claude/hooks/notify-core.sh" "$HOME/.claude/hooks/notify-core.sh"
+for legacy_hook in \
+  "$HOME/.claude/hooks/notify.sh" \
+  "$HOME/.claude/hooks/notify-core.sh" \
+  "$HOME/.codex/hooks/notify-core.sh"; do
+  [[ -L "$legacy_hook" ]] && rm "$legacy_hook"
+done
 ln -sf "$DOTFILES_DIR/claude/statusline-command.sh" "$HOME/.claude/statusline-command.sh"
-mkdir -p $HOME/.claude/skills
+mkdir -p "$HOME/.claude/skills"
 for skill in "$DOTFILES_DIR"/agents/skills/*/; do
   ln -sfn "${skill%/}" "$HOME/.claude/skills/$(basename "$skill")"
 done
@@ -25,27 +55,14 @@ print_step "Install Codex CLI"
 brew install codex
 
 print_step "Create configuration"
-mkdir -p $HOME/.codex/hooks
+mkdir -p "$HOME/.codex/hooks"
+ln -sf "$DOTFILES_DIR/codex/hooks.json" "$HOME/.codex/hooks.json"
+# Existing config.toml notify chains may still call this compatibility wrapper.
 ln -sf "$DOTFILES_DIR/codex/hooks/notify.sh" "$HOME/.codex/hooks/notify.sh"
-# notify-core.sh is shared; keep the canonical copy under claude/hooks
-ln -sf "$DOTFILES_DIR/claude/hooks/notify-core.sh" "$HOME/.codex/hooks/notify-core.sh"
 ln -sf "$DOTFILES_DIR/agents/AGENTS.md" "$HOME/.codex/AGENTS.md"
 # skills are shared with Codex via the Agent Skills standard directory
-mkdir -p $HOME/.agents/skills
+mkdir -p "$HOME/.agents/skills"
 for skill in "$DOTFILES_DIR"/agents/skills/*/; do
   ln -sfn "${skill%/}" "$HOME/.agents/skills/$(basename "$skill")"
 done
-# config.toml holds machine-specific project trust, so it isn't symlinked; just
-# ensure the notify hook is registered. `notify` is a root key, so it must
-# precede any [table] section — prepend it to stay valid TOML.
-CODEX_CONFIG="$HOME/.codex/config.toml"
-touch "$CODEX_CONFIG"
-if ! grep -q '^notify' "$CODEX_CONFIG"; then
-  CODEX_TMP=$(mktemp)
-  {
-    printf 'notify = ["bash", "%s/.codex/hooks/notify.sh"]\n' "$HOME"
-    cat "$CODEX_CONFIG"
-  } > "$CODEX_TMP" && mv "$CODEX_TMP" "$CODEX_CONFIG"
-fi
-
 print_success "Codex CLI setup complete"

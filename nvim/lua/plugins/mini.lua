@@ -450,7 +450,45 @@ return {
   {
     "nvim-mini/mini.statusline",
     version = "*",
-    opts = {},
+    config = function()
+      local agent_status = require("agent_status")
+      local statusline = require("mini.statusline")
+      local agent_highlights = {
+        attention = "MiniStatuslineModeOther",
+        activity = "MiniStatuslineDevinfo",
+        idle = "MiniStatuslineFilename",
+      }
+      agent_status.setup()
+      statusline.setup()
+      statusline.config.content.active = function()
+        local agents = agent_status.segments()
+        local mode, mode_hl = statusline.section_mode({ trunc_width = 120 })
+        local git = statusline.section_git({ trunc_width = 40 })
+        local diff = statusline.section_diff({ trunc_width = 75 })
+        local diagnostics = statusline.section_diagnostics({ trunc_width = 75 })
+        local lsp = statusline.section_lsp({ trunc_width = 75 })
+        local filename = statusline.section_filename({ trunc_width = 140 })
+        local fileinfo = statusline.section_fileinfo({ trunc_width = 120 })
+        local location = statusline.section_location({ trunc_width = 75 })
+        local search = statusline.section_searchcount({ trunc_width = 75 })
+
+        local groups = {
+          { hl = mode_hl, strings = { mode } },
+          { hl = "MiniStatuslineDevinfo", strings = { git, diff, diagnostics, lsp } },
+          "%<",
+          { hl = "MiniStatuslineFilename", strings = { filename } },
+          "%=",
+        }
+        for _, agent in ipairs(agents) do
+          groups[#groups + 1] = { hl = agent_highlights[agent.status], strings = { agent.text } }
+        end
+        vim.list_extend(groups, {
+          { hl = "MiniStatuslineFileinfo", strings = { fileinfo } },
+          { hl = mode_hl, strings = { search, location } },
+        })
+        return statusline.combine_groups(groups)
+      end
+    end,
   },
   {
     "nvim-mini/mini.tabline",

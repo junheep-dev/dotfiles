@@ -1,0 +1,395 @@
+#!/bin/bash
+
+set -u
+
+status_dir="${AGENT_STATUS_DIR:-/tmp/agent-status-$(id -u)}"
+tmux_bin="${AGENT_STATUS_TMUX:-$(command -v tmux 2>/dev/null || true)}"
+nvim_bin="${AGENT_STATUS_NVIM:-$(command -v nvim 2>/dev/null || true)}"
+
+mkdir -p "$status_dir"
+chmod 700 "$status_dir" 2>/dev/null || true
+
+state_path() {
+  local source="$1" session_id="$2" key
+  key=$(printf '%s' "$source:$session_id" | shasum -a 256 | awk '{print $1}')
+  printf '%s/%s.json' "$status_dir" "$key"
+}
+
+json_value() {
+  local payload="$1" expression="$2"
+  printf '%s' "$payload" | jq -r "$expression // empty" 2>/dev/null
+}
+
+tmux_value() {
+  local pane="$1" format="$2"
+  [ -n "$tmux_bin" ] && [ -n "$pane" ] || return 0
+  "$tmux_bin" display-message -t "$pane" -p "$format" 2>/dev/null || true
+}
+
+client_details() {
+  local agent_session="$1" line fallback=""
+  [ -n "$tmux_bin" ] || return 0
+
+  while IFS= read -r line; do
+    [ -n "$fallback" ] || fallback="$line"
+    if [ "$(printf '%s' "$line" | cut -f3)" = "$agent_session" ]; then
+      printf '%s' "$line"
+      return
+    fi
+  done <<EOF
+$("$tmux_bin" list-clients -F '#{client_activity}	#{client_name}	#{client_session}	#{client_tty}' 2>/dev/null | sort -rn)
+EOF
+  printf '%s' "$fallback"
+}
+
+refresh_tmux() {
+  local client
+  [ -n "$tmux_bin" ] || return 0
+  "$tmux_bin" list-clients -F '#{client_name}' 2>/dev/null | while IFS= read -r client; do
+    [ -n "$client" ] && "$tmux_bin" refresh-client -t "$client" -S 2>/dev/null || true
+  done
+}
+
+notify_nvim() {
+  local path="$1" address="$2" encoded
+  [ -n "$nvim_bin" ] && [ -n "$address" ] || return 0
+  encoded=$(printf '%s' "$path" | base64 | tr -d '\n')
+  "$nvim_bin" --server "$address" --remote-expr \
+    "luaeval(\"require('agent_status').update(vim.base64.decode(_A))\", '$encoded')" \
+    >/dev/null 2>&1 &
+}
+
+process_ancestors() {
+  local pid="$PPID" parent depth=0 output=""
+  while [ "$pid" -gt 1 ] 2>/dev/null && [ "$depth" -lt 16 ]; do
+    output="${output}${output:+,}${pid}"
+    parent=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
+    case "$parent" in
+      ''|*[!0-9]*) break ;;
+    esac
+    [ "$parent" != "$pid" ] || break
+    pid="$parent"
+    depth=$((depth + 1))
+  done
+  printf '%s' "$output"
+}
+
+is_visible() {
+  local path="$1" pane client_name client_session agent_session pane_active window_active frontmost
+  [ -n "$tmux_bin" ] || return 1
+
+  pane=$(jq -r '.pane // empty' "$path")
+  client_name=$(jq -r '.client_name // empty' "$path")
+  agent_session=$(jq -r '.tmux_session // empty' "$path")
+  [ -n "$pane" ] && [ -n "$client_name" ] || return 1
+
+  client_session=$("$tmux_bin" display-message -c "$client_name" -p '#{client_session}' 2>/dev/null || true)
+  pane_active=$(tmux_value "$pane" '#{pane_active}')
+  window_active=$(tmux_value "$pane" '#{window_active}')
+  frontmost=$(osascript -e \
+    'tell application "System Events" to get name of first application process whose frontmost is true' \
+    2>/dev/null | tr '[:upper:]' '[:lower:]')
+
+  [ "$frontmost" = "ghostty" ] \
+    && [ "$client_session" = "$agent_session" ] \
+    && [ "$pane_active" = "1" ] \
+    && [ "$window_active" = "1" ]
+}
+
+send_notification() {
+  local path="$1" tty location message
+  [ "${AGENT_STATUS_SKIP_NOTIFY:-0}" = "1" ] && return
+  is_visible "$path" && return
+
+  tty=$(jq -r '.client_tty // empty' "$path")
+  [ -n "$tty" ] && [ -w "$tty" ] || return
+  location=$(jq -r '.location // "Agent"' "$path")
+  message=$(jq -r '.message // empty' "$path")
+  [ -n "$message" ] || message="Agent needs your attention"
+  printf '\033]777;notify;%s;%s\007' "$location" "$message" >"$tty"
+}
+
+write_state() {
+  local source="$1" session_id="$2" phase="$3" unread="$4" message="$5"
+  local path pane window_id tmux_session location nvim client_line client_name client_tty
+  local ancestor_pids
+  local previous_phase previous_unread temp notify_needed=true
+
+  path=$(state_path "$source" "$session_id")
+  pane="${TMUX_PANE:-}"
+  nvim="${NVIM:-}"
+
+  if [ -f "$path" ]; then
+    [ -n "$pane" ] || pane=$(jq -r '.pane // empty' "$path")
+    [ -n "$nvim" ] || nvim=$(jq -r '.nvim // empty' "$path")
+    previous_phase=$(jq -r '.phase // empty' "$path")
+    previous_unread=$(jq -r '.unread // false' "$path")
+    if [ "$previous_phase" = "$phase" ] && [ "$previous_unread" = "$unread" ]; then
+      notify_needed=false
+    fi
+  fi
+
+  window_id=$(tmux_value "$pane" '#{window_id}')
+  tmux_session=$(tmux_value "$pane" '#{session_name}')
+  location=$(tmux_value "$pane" '#{session_name}:#{window_index}.#{pane_index} #{window_name}')
+  [ -n "$location" ] || location="Agent"
+
+  client_line=$(client_details "$tmux_session")
+  client_name=$(printf '%s' "$client_line" | cut -f2)
+  client_tty=$(printf '%s' "$client_line" | cut -f4)
+  ancestor_pids=$(process_ancestors)
+
+  temp=$(mktemp "$status_dir/.state.XXXXXX")
+  jq -n \
+    --arg source "$source" \
+    --arg session_id "$session_id" \
+    --arg phase "$phase" \
+    --argjson unread "$unread" \
+    --arg message "$message" \
+    --arg pane "$pane" \
+    --arg window_id "$window_id" \
+    --arg tmux_session "$tmux_session" \
+    --arg location "$location" \
+    --arg client_name "$client_name" \
+    --arg client_tty "$client_tty" \
+    --arg nvim "$nvim" \
+    --arg ancestor_pids "$ancestor_pids" \
+    '{
+      source: $source,
+      session_id: $session_id,
+      phase: $phase,
+      unread: $unread,
+      message: $message,
+      pane: $pane,
+      window_id: $window_id,
+      tmux_session: $tmux_session,
+      location: $location,
+      client_name: $client_name,
+      client_tty: $client_tty,
+      nvim: $nvim,
+      ancestor_pids: ($ancestor_pids | split(",") | map(select(length > 0) | tonumber))
+    }' >"$temp"
+  chmod 600 "$temp"
+  mv "$temp" "$path"
+
+  refresh_tmux
+  notify_nvim "$path" "$nvim"
+  if [ "$unread" = "true" ] && [ "$notify_needed" = "true" ]; then
+    send_notification "$path"
+  fi
+}
+
+remove_state() {
+  local source="$1" session_id="$2" path nvim
+  path=$(state_path "$source" "$session_id")
+  [ -f "$path" ] || return
+  nvim=$(jq -r '.nvim // empty' "$path")
+  rm -f "$path"
+  refresh_tmux
+  notify_nvim "$path" "$nvim"
+}
+
+prune_stale_states() {
+  local file pane resolved_pane nvim changed=false
+  [ -n "$tmux_bin" ] || return
+
+  for file in "$status_dir"/*.json; do
+    [ -f "$file" ] || continue
+    pane=$(jq -r '.pane // empty' "$file")
+    [ -n "$pane" ] || continue
+    resolved_pane=$("$tmux_bin" display-message -t "$pane" -p '#{pane_id}' 2>/dev/null || true)
+    [ "$resolved_pane" != "$pane" ] || continue
+    nvim=$(jq -r '.nvim // empty' "$file")
+    rm -f "$file"
+    notify_nvim "$file" "$nvim"
+    changed=true
+  done
+
+  [ "$changed" = false ] || refresh_tmux
+}
+
+remove_superseded_direct_states() {
+  local keep_path="$1" pane="$2" file changed=false
+  [ -n "$pane" ] && [ -z "${NVIM:-}" ] || return
+
+  for file in "$status_dir"/*.json; do
+    [ -f "$file" ] || continue
+    [ "$file" != "$keep_path" ] || continue
+    [ "$(jq -r '.pane // empty' "$file")" = "$pane" ] || continue
+    [ -z "$(jq -r '.nvim // empty' "$file")" ] || continue
+    rm -f "$file"
+    changed=true
+  done
+
+  [ "$changed" = false ] || refresh_tmux
+}
+
+handle_event() {
+  local source="$1" payload session_id event_type notification_type message phase unread path
+  payload=$(cat)
+  session_id=$(json_value "$payload" '.session_id // .["thread-id"]')
+  event_type=$(json_value "$payload" '.hook_event_name // .type')
+  notification_type=$(json_value "$payload" '.notification_type')
+  message=$(json_value "$payload" '.last_assistant_message // .["last-assistant-message"] // .message')
+  message=$(printf '%s' "$message" | head -1 | cut -c1-240)
+
+  if [ "$event_type" = "agent-turn-complete" ]; then
+    event_type="Stop"
+  fi
+  [ -n "$session_id" ] || session_id="${TMUX_PANE:-$PPID}"
+
+  case "$event_type" in
+    SessionStart)
+      prune_stale_states
+      remove_superseded_direct_states "$(state_path "$source" "$session_id")" "${TMUX_PANE:-}"
+      phase="idle"
+      unread=false
+      ;;
+    UserPromptSubmit)
+      phase="running"
+      unread=false
+      ;;
+    PostToolUse|PostToolUseFailure)
+      path=$(state_path "$source" "$session_id")
+      if [ ! -f "$path" ] || [ "$(jq -r '.phase // empty' "$path")" != "waiting" ]; then
+        printf '{}\n'
+        return
+      fi
+      phase="running"
+      unread=false
+      ;;
+    Notification)
+      case "$notification_type" in
+        idle_prompt|agent_completed)
+          phase="done"
+          unread=true
+          [ -n "$message" ] || message="Agent finished"
+          ;;
+        permission_prompt|elicitation_dialog|elicitation_url_dialog|agent_needs_input|quota_auto_resume_stale|quota_auto_resume_disabled)
+          phase="waiting"
+          unread=true
+          [ -n "$message" ] || message="Agent needs input"
+          ;;
+        elicitation_complete|elicitation_response|quota_auto_resume_fired)
+          phase="running"
+          unread=false
+          ;;
+        *)
+          printf '{}\n'
+          return
+          ;;
+      esac
+      ;;
+    Stop)
+      phase="done"
+      unread=true
+      [ -n "$message" ] || message="Agent finished"
+      ;;
+    SessionEnd)
+      remove_state "$source" "$session_id"
+      printf '{}\n'
+      return
+      ;;
+    *)
+      printf '{}\n'
+      return
+      ;;
+  esac
+
+  write_state "$source" "$session_id" "$phase" "$unread" "$message"
+  printf '{}\n'
+}
+
+render_status() {
+  local window_id="$1" files
+  files=("$status_dir"/*.json)
+  [ -f "${files[0]}" ] || return
+
+  jq -jrs --arg window_id "$window_id" '
+    def badge($symbol; $count):
+      if $count == 0 then ""
+      elif $count == 1 then " " + $symbol
+      else " " + $symbol + ($count | tostring)
+      end;
+    map(select((.window_id // "") == $window_id)) as $states
+    | badge("●"; [$states[] | select(.phase == "running")] | length)
+      + badge("?"; [$states[] | select(.phase == "waiting")] | length)
+      + badge("!"; [$states[] | select(.phase == "done" and .unread == true)] | length)
+  ' "${files[@]}" 2>/dev/null
+}
+
+acknowledge_file() {
+  local path="$1" temp nvim phase
+  [ -f "$path" ] || return
+  [ "$(jq -r '.unread // false' "$path")" = "true" ] || return
+  nvim=$(jq -r '.nvim // empty' "$path")
+  phase=$(jq -r '.phase // empty' "$path")
+  if [ "$phase" = "done" ]; then
+    rm -f "$path"
+    notify_nvim "$path" "$nvim"
+    return
+  fi
+  temp=$(mktemp "$status_dir/.state.XXXXXX")
+  jq '.unread = false' "$path" >"$temp"
+  chmod 600 "$temp"
+  mv "$temp" "$path"
+  notify_nvim "$path" "$nvim"
+}
+
+acknowledge_pane() {
+  local pane="$1" file
+  for file in "$status_dir"/*.json; do
+    [ -f "$file" ] || continue
+    [ "$(jq -r '.pane // empty' "$file")" = "$pane" ] || continue
+    [ -z "$(jq -r '.nvim // empty' "$file")" ] || continue
+    acknowledge_file "$file"
+  done
+  refresh_tmux
+}
+
+acknowledge_path() {
+  acknowledge_file "$1"
+  refresh_tmux
+}
+
+remove_pane() {
+  local pane="$1" file nvim
+  for file in "$status_dir"/*.json; do
+    [ -f "$file" ] || continue
+    [ "$(jq -r '.pane // empty' "$file")" = "$pane" ] || continue
+    nvim=$(jq -r '.nvim // empty' "$file")
+    rm -f "$file"
+    notify_nvim "$file" "$nvim"
+  done
+  refresh_tmux
+}
+
+case "${1:-}" in
+  event)
+    handle_event "${2:-agent}"
+    ;;
+  legacy)
+    legacy_payload="${3-}"
+    [ -n "$legacy_payload" ] || legacy_payload='{}'
+    printf '%s' "$legacy_payload" | handle_event "${2:-agent}"
+    ;;
+  render)
+    render_status "${2:-}"
+    ;;
+  acknowledge-path)
+    acknowledge_path "${2:-}"
+    ;;
+  acknowledge-pane)
+    acknowledge_pane "${2:-}"
+    ;;
+  remove-pane)
+    remove_pane "${2:-}"
+    ;;
+  prune)
+    prune_stale_states
+    ;;
+  *)
+    printf 'usage: agent-status {event|legacy|render|acknowledge-path|acknowledge-pane|remove-pane|prune}\n' >&2
+    exit 2
+    ;;
+esac
