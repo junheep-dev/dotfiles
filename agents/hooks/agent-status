@@ -396,14 +396,26 @@ sync_tree_status() {
 }
 
 render_other_sessions() {
-  local current_session="$1" files pane_map
-  prune_stale_states
-  files=("$status_dir"/*.json)
-  [ -f "${files[0]}" ] || return
+  local current_session="$1" accent="${2:-}" muted="${3:-}" files states window_map pane_map
   [ -n "$tmux_bin" ] || return
-  pane_map=$("$tmux_bin" list-panes -a -F $'#{pane_id}\t#{session_id}\t#{session_name}' 2>/dev/null) || return
+  prune_stale_states
 
-  jq -jrs --arg current_session "$current_session" --arg pane_map "$pane_map" '
+  window_map=$("$tmux_bin" list-windows -a -F $'#{session_id}\t#{session_name}\t#{window_index}\t#{window_name}\t#{window_id}' 2>/dev/null) || return
+  pane_map=$("$tmux_bin" list-panes -a -F $'#{pane_id}\t#{window_id}' 2>/dev/null) || return
+
+  states='[]'
+  files=("$status_dir"/*.json)
+  if [ -f "${files[0]}" ]; then
+    states=$(jq -s '.' "${files[@]}" 2>/dev/null) || states='[]'
+  fi
+
+  jq -jn \
+    --arg current "$current_session" \
+    --arg accent "$accent" \
+    --arg muted "$muted" \
+    --arg window_map "$window_map" \
+    --arg pane_map "$pane_map" \
+    --argjson states "$states" '
     def escape_format: gsub("#"; "##");
     def tmux_unread: if has("tmux_unread") then .tmux_unread else (.unread // false) end;
     def badge($symbol; $count):
@@ -411,55 +423,52 @@ render_other_sessions() {
       elif $count == 1 then " " + $symbol
       else " " + $symbol + ($count | tostring)
       end;
+    def colour($value): if $value == "" then "" else "#[fg=" + $value + "]" end;
+
     ($pane_map
       | split("\n")
-      | map(
-          split("\t")
-          | select(length == 3)
-          | {
-              key: .[0],
-              value: {
-                session_id: .[1],
-                session_name: .[2]
-              }
-            }
-        )
+      | map(split("\t") | select(length == 2) | {key: .[0], value: .[1]})
       | from_entries
-    ) as $panes
-    | map(
-        . as $state
-        | ($panes[$state.pane // ""] // null) as $target
-        | select($target != null and $target.session_name != $current_session)
-        | . + {target: $target}
-      )
-    | group_by(.target.session_id)
-    | map(
-        . as $states
-        | {
-            id: $states[0].target.session_id,
-            name: $states[0].target.session_name,
-            running: [$states[] | select(.phase == "running")] | length,
-            waiting: [$states[] | select(.phase == "waiting")] | length,
-            done: [$states[] | select(.phase == "done" and tmux_unread)] | length
-          }
-        | select(.running + .waiting + .done > 0)
-      )
-    | map(
-        . + {
-          text: (
-            "#[range=session|" + .id + "]"
-            + (.name | escape_format)
-            + badge("●"; .running)
-            + badge("?"; .waiting)
-            + badge("!"; .done)
-            + "#[norange]"
+    ) as $pane_window
+    | ($states
+      | map(.window = ($pane_window[.pane // ""] // ""))
+      | map(select(.window != ""))
+      | group_by(.window)
+      | map({
+          key: .[0].window,
+          value: (
+            badge("●"; [.[] | select(.phase == "running")] | length)
+            + badge("?"; [.[] | select(.phase == "waiting")] | length)
+            + badge("!"; [.[] | select(.phase == "done" and tmux_unread)] | length)
           )
-        }
+        })
+      | from_entries
+    ) as $badges
+    | $window_map
+    | split("\n")
+    | map(
+        split("\t")
+        | select(length == 5)
+        | {session_id: .[0], session_name: .[1], index: .[2], name: .[3], window_id: .[4]}
       )
-    | sort_by(.name)
-    | map(.text)
+    | map(select(.session_name != $current))
+    | group_by(.session_id)
+    | sort_by(.[0].session_name)
+    | map(
+        "#[range=session|" + .[0].session_id + "]" + colour($accent)
+        + (.[0].session_name | escape_format) + "#[norange]"
+        + (
+          map(
+            ($badges[.window_id] // "") as $badge
+            | "#[range=user|" + .session_id + ":" + .index + "]"
+              + colour($muted) + " " + .index + ":" + (.name | escape_format)
+              + (if $badge == "" then "" else colour($accent) + $badge end)
+              + "#[norange]"
+          ) | join("")
+        )
+      )
     | if length == 0 then "" else join("  ") + "  " end
-  ' "${files[@]}" 2>/dev/null
+  ' 2>/dev/null
 }
 
 acknowledge_file() {
@@ -545,7 +554,7 @@ case "${1:-}" in
     sync_tree_status
     ;;
   render-sessions)
-    render_other_sessions "${2:-}"
+    render_other_sessions "${2:-}" "${3:-}" "${4:-}"
     ;;
   acknowledge-path)
     acknowledge_path "${2:-}"
