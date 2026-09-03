@@ -26,13 +26,14 @@ local function sidekick_states()
   local ok, result = pcall(function()
     return require("sidekick.cli.state").get({ attached = true })
   end)
-  return ok and result or {}
+  return ok and result or {}, ok
 end
 
 local function sidekick_sessions()
   local sessions = {}
   local totals = {}
-  for _, sidekick in ipairs(sidekick_states()) do
+  local states, available = sidekick_states()
+  for _, sidekick in ipairs(states) do
     local source = source_by_tool[sidekick.tool.name]
     if source and sidekick.session then
       sessions[#sessions + 1] = { source = source, sidekick = sidekick }
@@ -45,7 +46,7 @@ local function sidekick_sessions()
     end
     return tostring(a.sidekick.session.id) < tostring(b.sidekick.session.id)
   end)
-  return sessions, totals
+  return sessions, totals, available
 end
 
 local function acknowledge(path)
@@ -56,7 +57,7 @@ local function acknowledge(path)
   vim.fn.jobstart({ command, "acknowledge-path", path }, { detach = true })
 end
 
-local function agent_status_for_sidekick(sidekick, source_count)
+local function agent_status_for_sidekick(sidekick, source_count, allow_fallback)
   local candidates = {}
   for path, status in pairs(statuses) do
     if status.source == source_by_tool[sidekick.tool.name] then
@@ -73,8 +74,42 @@ local function agent_status_for_sidekick(sidekick, source_count)
     end
   end
 
-  if source_count == 1 and #candidates == 1 then
+  if allow_fallback ~= false and source_count == 1 and #candidates == 1 then
     return candidates[1].path, candidates[1].status
+  end
+end
+
+local function remove_state(path)
+  local command = vim.fn.expand("~/.local/bin/agent-status")
+  if vim.fn.executable(command) ~= 1 then
+    return
+  end
+  statuses[path] = nil
+  vim.fn.jobstart({ command, "remove-path", path }, { detach = true })
+end
+
+local function prune_detached_sidekick_states()
+  local sessions, totals, available = sidekick_sessions()
+  if not available then
+    return
+  end
+
+  local attached_paths = {}
+  for _, item in ipairs(sessions) do
+    local path = agent_status_for_sidekick(item.sidekick, totals[item.source], false)
+    if path then
+      attached_paths[path] = true
+    end
+  end
+
+  local detached_paths = {}
+  for path in pairs(statuses) do
+    if not attached_paths[path] then
+      detached_paths[#detached_paths + 1] = path
+    end
+  end
+  for _, path in ipairs(detached_paths) do
+    remove_state(path)
   end
 end
 
@@ -153,6 +188,13 @@ function M.setup()
     group = group,
     callback = acknowledge_focused_terminal,
   })
+  vim.api.nvim_create_autocmd("User", {
+    group = group,
+    pattern = { "SidekickCliAttach", "SidekickCliDetach" },
+    callback = prune_detached_sidekick_states,
+  })
+
+  prune_detached_sidekick_states()
 end
 
 return M

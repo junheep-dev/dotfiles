@@ -194,6 +194,17 @@ remove_state() {
   notify_nvim "$path" "$nvim"
 }
 
+remove_path() {
+  local path="$1"
+  [ -f "$path" ] || return
+  case "$path" in
+    "$status_dir"/*.json) ;;
+    *) return ;;
+  esac
+  rm -f "$path"
+  refresh_tmux
+}
+
 prune_stale_states() {
   local file pane resolved_pane nvim changed=false stale
 
@@ -312,6 +323,7 @@ handle_event() {
 
 render_pane_status() {
   local pane="$1" files
+  [ -n "$pane" ] || return 0
   files=("$status_dir"/*.json)
   [ -f "${files[0]}" ] || return
 
@@ -331,6 +343,7 @@ render_pane_status() {
 
 render_tmux_status() {
   local field="$1" value="$2" files pane_map
+  [ -n "$value" ] || return 0
   files=("$status_dir"/*.json)
   [ -f "${files[0]}" ] || return
   [ -n "$tmux_bin" ] || return
@@ -359,13 +372,36 @@ render_tmux_status() {
   ' "${files[@]}" 2>/dev/null
 }
 
+sync_tree_status() {
+  local target status
+  [ -n "$tmux_bin" ] || return 0
+
+  while IFS= read -r target; do
+    [ -n "$target" ] || continue
+    status=$(render_tmux_status session_id "$target")
+    "$tmux_bin" set-option -q -t "$target" @agent_status_session "$status"
+  done < <("$tmux_bin" list-sessions -F '#{session_id}')
+
+  while IFS= read -r target; do
+    [ -n "$target" ] || continue
+    status=$(render_tmux_status window_id "$target")
+    "$tmux_bin" set-option -qw -t "$target" @agent_status_window "$status"
+  done < <("$tmux_bin" list-windows -a -F '#{window_id}' | sort -u)
+
+  while IFS= read -r target; do
+    [ -n "$target" ] || continue
+    status=$(render_pane_status "$target")
+    "$tmux_bin" set-option -qp -t "$target" @agent_status_pane "$status"
+  done < <("$tmux_bin" list-panes -a -F '#{pane_id}')
+}
+
 render_other_sessions() {
   local current_session="$1" files pane_map
   prune_stale_states
   files=("$status_dir"/*.json)
   [ -f "${files[0]}" ] || return
   [ -n "$tmux_bin" ] || return
-  pane_map=$("$tmux_bin" list-panes -a -F $'#{pane_id}\t#{session_id}\t#{session_name}\t#{window_id}\t#{window_index}\t#{window_name}\t#{pane_index}' 2>/dev/null) || return
+  pane_map=$("$tmux_bin" list-panes -a -F $'#{pane_id}\t#{session_id}\t#{session_name}' 2>/dev/null) || return
 
   jq -jrs --arg current_session "$current_session" --arg pane_map "$pane_map" '
     def escape_format: gsub("#"; "##");
@@ -379,16 +415,12 @@ render_other_sessions() {
       | split("\n")
       | map(
           split("\t")
-          | select(length == 7)
+          | select(length == 3)
           | {
               key: .[0],
               value: {
                 session_id: .[1],
-                session_name: .[2],
-                window_id: .[3],
-                window_index: .[4],
-                window_name: .[5],
-                pane_index: .[6]
+                session_name: .[2]
               }
             }
         )
@@ -398,56 +430,31 @@ render_other_sessions() {
         . as $state
         | ($panes[$state.pane // ""] // null) as $target
         | select($target != null and $target.session_name != $current_session)
-        | if .phase == "running" then . + {symbol: "●", target: $target}
-          elif .phase == "waiting" then . + {symbol: "?", target: $target}
-          elif .phase == "done" and tmux_unread then . + {symbol: "!", target: $target}
-          else empty
-          end
+        | . + {target: $target}
       )
-    | group_by(.pane)
+    | group_by(.target.session_id)
     | map(
         . as $states
         | {
-            pane: $states[0].pane,
-            target: $states[0].target,
-            badges: (
-              badge("●"; [$states[] | select(.phase == "running")] | length)
-              + badge("?"; [$states[] | select(.phase == "waiting")] | length)
-              + badge("!"; [$states[] | select(.phase == "done" and tmux_unread)] | length)
-            )
+            id: $states[0].target.session_id,
+            name: $states[0].target.session_name,
+            running: [$states[] | select(.phase == "running")] | length,
+            waiting: [$states[] | select(.phase == "waiting")] | length,
+            done: [$states[] | select(.phase == "done" and tmux_unread)] | length
           }
+        | select(.running + .waiting + .done > 0)
       )
-    | group_by(.target.session_name)
     | map(
-        sort_by([(.target.window_index | tonumber), (.target.pane_index | tonumber)]) as $panes
-        | {
-            name: $panes[0].target.session_name,
-            text: (
-              "#[range=session|" + $panes[0].target.session_id + "]"
-              + ($panes[0].target.session_name | escape_format)
-              + "#[norange]"
-              + ($panes
-                | map(
-                    . as $pane
-                    | ([$panes[] | select(.target.window_id == $pane.target.window_id)] | length) as $window_panes
-                    | ([$panes[] | select(.target.window_name == $pane.target.window_name) | .target.window_id] | unique | length) as $same_name_windows
-                    | (if ($panes | length) == 1 then ""
-                       elif $same_name_windows > 1 then $pane.target.window_index
-                       else ($pane.target.window_name | escape_format)
-                       end) as $window_label
-                    | (if $window_panes > 1 then $window_label + "." + $pane.target.pane_index
-                       else $window_label
-                       end) as $label
-                    | " #[range=user|p" + ($pane.pane | ltrimstr("%")) + "]"
-                    + (if $label == "" then ($pane.badges | ltrimstr(" "))
-                       else $label + $pane.badges
-                       end)
-                    + "#[norange]"
-                  )
-                | join("")
-              )
-            )
-          }
+        . + {
+          text: (
+            "#[range=session|" + .id + "]"
+            + (.name | escape_format)
+            + badge("●"; .running)
+            + badge("?"; .waiting)
+            + badge("!"; .done)
+            + "#[norange]"
+          )
+        }
       )
     | sort_by(.name)
     | map(.text)
@@ -504,21 +511,6 @@ acknowledge_path() {
   refresh_tmux
 }
 
-focus_pane() {
-  local range="$1" client="$2" pane session window
-  case "$range" in
-    p[0-9]*) pane="%${range#p}" ;;
-    *) return 1 ;;
-  esac
-  [ -n "$tmux_bin" ] && [ -n "$client" ] || return 1
-
-  session=$("$tmux_bin" display-message -t "$pane" -p '#{session_id}' 2>/dev/null) || return 1
-  window=$("$tmux_bin" display-message -t "$pane" -p '#{window_id}' 2>/dev/null) || return 1
-  "$tmux_bin" select-window -t "$window" || return 1
-  "$tmux_bin" select-pane -t "$pane" || return 1
-  "$tmux_bin" switch-client -c "$client" -t "$session"
-}
-
 remove_pane() {
   local pane="$1" file nvim
   for file in "$status_dir"/*.json; do
@@ -549,6 +541,9 @@ case "${1:-}" in
   render-session)
     render_tmux_status session_id "${2:-}"
     ;;
+  sync-tree-status)
+    sync_tree_status
+    ;;
   render-sessions)
     render_other_sessions "${2:-}"
     ;;
@@ -558,17 +553,17 @@ case "${1:-}" in
   acknowledge-pane)
     acknowledge_pane "${2:-}"
     ;;
-  focus-pane)
-    focus_pane "${2:-}" "${3:-}"
-    ;;
   remove-pane)
     remove_pane "${2:-}"
+    ;;
+  remove-path)
+    remove_path "${2:-}"
     ;;
   prune)
     prune_stale_states
     ;;
   *)
-    printf 'usage: agent-status {event|legacy|render|render-pane|render-session|render-sessions|acknowledge-path|acknowledge-pane|focus-pane|remove-pane|prune}\n' >&2
+    printf 'usage: agent-status {event|legacy|render|render-pane|render-session|render-sessions|sync-tree-status|acknowledge-path|acknowledge-pane|remove-pane|remove-path|prune}\n' >&2
     exit 2
     ;;
 esac
