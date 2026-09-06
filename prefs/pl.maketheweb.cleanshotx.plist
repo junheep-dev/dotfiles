@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>LAVAopenFromClipboard</key>
+	<data>
+	eyJjYXJib25Nb2RpZmllcnMiOjc2OCwiY2FyYm9uS2V5IjoyNn0=
+	</data>
+	<key>LAVAqaoRestore</key>
+	<data>
+	eyJjYXJib25LZXkiOjIyLCJjYXJib25Nb2RpZmllcnMiOjc2OH0=
+	</data>
+	<key>LAVAtakeAllInOne</key>
+	<data>
+	eyJjYXJib25LZXkiOjIzLCJjYXJib25Nb2RpZmllcnMiOjc2OH0=
+	</data>
+	<key>LAVAtakeArea</key>
+	<data>
+	eyJjYXJib25LZXkiOjIxLCJjYXJib25Nb2RpZmllcnMiOjc2OH0=
+	</data>
+	<key>LAVAtakeFullscreen</key>
+	<data>
+	eyJjYXJib25LZXkiOjIwLCJjYXJib25Nb2RpZmllcnMiOjc2OH0=
+	</data>
+	<key>afterScreenshotActions</key>
+	<array>
+		<integer>0</integer>
+		<integer>1</integer>
+	</array>
+	<key>afterVideoActions</key>
+	<array>
+		<integer>0</integer>
+		<integer>1</integer>
+	</array>
+	<key>autoClosePopup</key>
+	<true/>
+	<key>captureWithoutDesktopIcons</key>
+	<true/>
+	<key>exportPath</key>
+	<string>/Users/junhee/Downloads</string>
+	<key>highlightClicks</key>
+	<true/>
+	<key>keyboardOverlayPosition</key>
+	<integer>4</integer>
+	<key>popupAutoCloseMode</key>
+	<integer>1</integer>
+	<key>showKeystrokes</key>
+	<true/>
+	<key>showMenubarIcon</key>
+	<false/>
+</dict>
+</plist>
