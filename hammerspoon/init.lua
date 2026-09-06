@@ -45,7 +45,7 @@ hs.hotkey.bind({ "cmd", "ctrl" }, "a", function()
 end)
 
 hs.hotkey.bind({ "cmd", "ctrl" }, "j", function()
-  moveWindowToFocusedSpace("Claude")
+  moveWindowToFocusedSpace("ChatGPT")
 end)
 
 -- for work
@@ -143,10 +143,7 @@ local GAP = 4
 local ULTRAWIDE_RATIO = 2.0
 
 local function framesMatch(a, b)
-  return math.abs(a.x - b.x) <= 1
-    and math.abs(a.y - b.y) <= 1
-    and math.abs(a.w - b.w) <= 1
-    and math.abs(a.h - b.h) <= 1
+  return math.abs(a.x - b.x) <= 1 and math.abs(a.y - b.y) <= 1 and math.abs(a.w - b.w) <= 1 and math.abs(a.h - b.h) <= 1
 end
 
 local function layoutWindow(win)
