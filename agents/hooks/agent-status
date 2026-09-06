@@ -395,12 +395,16 @@ sync_tree_status() {
   done < <("$tmux_bin" list-panes -a -F '#{pane_id}')
 }
 
+# Lists every session other than the current one with a badge summarising the
+# agent state across its windows. Windows are deliberately not listed: the bar
+# can only switch sessions, so showing per-window entries would imply a jump
+# the status line cannot offer.
 render_other_sessions() {
-  local current_session="$1" accent="${2:-}" muted="${3:-}" files states window_map pane_map
+  local current_session="$1" accent="${2:-}" files states window_map pane_map
   [ -n "$tmux_bin" ] || return
   prune_stale_states
 
-  window_map=$("$tmux_bin" list-windows -a -F $'#{session_id}\t#{session_name}\t#{window_index}\t#{window_name}\t#{window_id}' 2>/dev/null) || return
+  window_map=$("$tmux_bin" list-windows -a -F $'#{session_id}\t#{session_name}\t#{window_id}' 2>/dev/null) || return
   pane_map=$("$tmux_bin" list-panes -a -F $'#{pane_id}\t#{window_id}' 2>/dev/null) || return
 
   states='[]'
@@ -412,7 +416,6 @@ render_other_sessions() {
   jq -jn \
     --arg current "$current_session" \
     --arg accent "$accent" \
-    --arg muted "$muted" \
     --arg window_map "$window_map" \
     --arg pane_map "$pane_map" \
     --argjson states "$states" '
@@ -433,39 +436,26 @@ render_other_sessions() {
     | ($states
       | map(.window = ($pane_window[.pane // ""] // ""))
       | map(select(.window != ""))
-      | group_by(.window)
-      | map({
-          key: .[0].window,
-          value: (
-            badge("●"; [.[] | select(.phase == "running")] | length)
-            + badge("?"; [.[] | select(.phase == "waiting")] | length)
-            + badge("!"; [.[] | select(.phase == "done" and tmux_unread)] | length)
-          )
-        })
-      | from_entries
-    ) as $badges
+    ) as $live
     | $window_map
     | split("\n")
     | map(
         split("\t")
-        | select(length == 5)
-        | {session_id: .[0], session_name: .[1], index: .[2], name: .[3], window_id: .[4]}
+        | select(length == 3)
+        | {session_id: .[0], session_name: .[1], window_id: .[2]}
       )
     | map(select(.session_name != $current))
     | group_by(.session_id)
     | sort_by(.[0].session_name)
     | map(
-        "#[range=session|" + .[0].session_id + "]" + colour($accent)
-        + (.[0].session_name | escape_format) + "#[norange]"
-        + (
-          map(
-            ($badges[.window_id] // "") as $badge
-            | "#[range=user|" + .session_id + ":" + .index + "]"
-              + colour($muted) + " " + .index + ":" + (.name | escape_format)
-              + (if $badge == "" then "" else colour($accent) + $badge end)
-              + "#[norange]"
-          ) | join("")
-        )
+        ([.[].window_id]) as $ids
+        | ($live | map(select(.window as $w | $ids | index($w) != null))) as $states
+        | "#[range=session|" + .[0].session_id + "]" + colour($accent)
+          + (.[0].session_name | escape_format)
+          + badge("●"; [$states[] | select(.phase == "running")] | length)
+          + badge("?"; [$states[] | select(.phase == "waiting")] | length)
+          + badge("!"; [$states[] | select(.phase == "done" and tmux_unread)] | length)
+          + "#[norange]"
       )
     | if length == 0 then "" else join("  ") + "  " end
   ' 2>/dev/null
@@ -554,7 +544,7 @@ case "${1:-}" in
     sync_tree_status
     ;;
   render-sessions)
-    render_other_sessions "${2:-}" "${3:-}" "${4:-}"
+    render_other_sessions "${2:-}" "${3:-}"
     ;;
   acknowledge-path)
     acknowledge_path "${2:-}"
