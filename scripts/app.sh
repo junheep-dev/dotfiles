@@ -21,6 +21,8 @@ print_header "Spotify"
 brew install --cask spotify
 print_header "Spark"
 brew install --cask readdle-spark
+print_header "Typora"
+brew install --cask typora
 
 # MAS
 print_header "MAS"
