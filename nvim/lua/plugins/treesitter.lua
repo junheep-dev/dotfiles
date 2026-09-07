@@ -68,4 +68,19 @@ return {
       })
     end,
   },
+  {
+    -- Pins the enclosing scope (function/class/if...) to the top of the window
+    -- as a float, so the header of whatever you are inside stays visible while
+    -- scrolling. Reads `vim.treesitter` directly and ships its own
+    -- queries/<lang>/context.scm, so it is unaffected by the main-branch
+    -- rewrite above -- all it needs from it is an installed parser.
+    "nvim-treesitter/nvim-treesitter-context",
+    event = { "BufReadPost", "BufNewFile" },
+    opts = {
+      -- unlimited by default, which lets deeply nested code eat a third of the
+      -- window; trim_scope defaults to 'outer', so the lines dropped past the
+      -- limit are the outermost -- the innermost scope stays.
+      max_lines = 3,
+    },
+  },
 }
