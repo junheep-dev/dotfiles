@@ -21,6 +21,6 @@
 	<key>skipGapTopEdge</key>
 	<true/>
 	<key>subsequentExecutionMode</key>
-	<integer>0</integer>
+	<integer>3</integer>
 </dict>
 </plist>
