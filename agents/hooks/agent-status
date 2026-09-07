@@ -395,10 +395,10 @@ sync_tree_status() {
   done < <("$tmux_bin" list-panes -a -F '#{pane_id}')
 }
 
-# Lists every session other than the current one with a badge summarising the
-# agent state across its windows. Windows are deliberately not listed: the bar
-# can only switch sessions, so showing per-window entries would imply a jump
-# the status line cannot offer.
+# Lists the sessions other than the current one that have live agent activity,
+# with a badge summarising it across their windows. Windows are deliberately
+# not listed: the bar can only switch sessions, so showing per-window entries
+# would imply a jump the status line cannot offer.
 render_other_sessions() {
   local current_session="$1" accent="${2:-}" files states window_map pane_map
   [ -n "$tmux_bin" ] || return
@@ -450,11 +450,14 @@ render_other_sessions() {
     | map(
         ([.[].window_id]) as $ids
         | ($live | map(select(.window as $w | $ids | index($w) != null))) as $states
+        | (badge("●"; [$states[] | select(.phase == "running")] | length)
+           + badge("?"; [$states[] | select(.phase == "waiting")] | length)
+           + badge("!"; [$states[] | select(.phase == "done" and tmux_unread)] | length)
+          ) as $badges
+        | select($badges != "")
         | "#[range=session|" + .[0].session_id + "]" + colour($accent)
           + (.[0].session_name | escape_format)
-          + badge("●"; [$states[] | select(.phase == "running")] | length)
-          + badge("?"; [$states[] | select(.phase == "waiting")] | length)
-          + badge("!"; [$states[] | select(.phase == "done" and tmux_unread)] | length)
+          + $badges
           + "#[norange]"
       )
     | if length == 0 then "" else join("  ") + "  " end
