@@ -68,7 +68,7 @@ select_keys() {
   local src="$1" dst="$2" secret_count="$3"
   shift 3
   python3 - "$src" "$dst" "$secret_count" "$@" <<'PY'
-import fnmatch, plistlib, sys
+import fnmatch, os, plistlib, sys
 
 src, dst, secret_count = sys.argv[1], sys.argv[2], int(sys.argv[3])
 rest = sys.argv[4:]
@@ -79,6 +79,12 @@ with open(src, "rb") as f:
 
 kept = {k: v for k, v in data.items()
         if any(fnmatch.fnmatch(k, p) for p in patterns)}
+
+# A path under this machine's home is stored as "~/..." so it still resolves
+# on a machine with a different user name.
+home = os.path.expanduser("~")
+kept = {k: f"~{v[len(home):]}" if isinstance(v, str) and (v == home or v.startswith(home + "/")) else v
+        for k, v in kept.items()}
 
 leaked = [k for k in kept if any(fnmatch.fnmatch(k, s) for s in secrets)]
 if leaked:
@@ -92,6 +98,22 @@ with open(dst, "wb") as f:
     plistlib.dump(kept, f, sort_keys=True)
 
 print(f"{len(data)} -> {len(kept)}")
+PY
+}
+
+# Undoes the export-side rewrite: "~/..." becomes this machine's home.
+expand_paths() {
+  python3 - "$1" "$2" <<'PY'
+import os, plistlib, sys
+
+with open(sys.argv[1], "rb") as f:
+    data = plistlib.load(f)
+
+data = {k: os.path.expanduser(v) if isinstance(v, str) and (v == "~" or v.startswith("~/")) else v
+        for k, v in data.items()}
+
+with open(sys.argv[2], "wb") as f:
+    plistlib.dump(data, f, sort_keys=True)
 PY
 }
 
@@ -141,6 +163,10 @@ cmd_export() {
 cmd_import() {
   print_section "Import app preferences"
 
+  local tmp
+  tmp=$(mktemp -d)
+  trap "rm -rf '$tmp'" EXIT
+
   local entry domain app snapshot
   for entry in "${DOMAINS[@]}"; do
     domain="${entry%%:*}"
@@ -160,7 +186,12 @@ cmd_import() {
 
     # Merge rather than replace: the snapshot holds only the curated keys, and
     # `defaults import` would otherwise wipe the app's own state, license included.
-    if defaults import "$domain" "$snapshot"; then
+    if ! expand_paths "$snapshot" "$tmp/expanded.plist"; then
+      print_error "Failed to read $snapshot"
+      continue
+    fi
+
+    if defaults import "$domain" "$tmp/expanded.plist"; then
       print_step "Imported $domain"
       open -a "$app" 2>/dev/null
     else

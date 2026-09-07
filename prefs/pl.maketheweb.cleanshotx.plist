@@ -37,7 +37,7 @@
 	<key>captureWithoutDesktopIcons</key>
 	<true/>
 	<key>exportPath</key>
-	<string>/Users/junhee/Downloads</string>
+	<string>~/Downloads</string>
 	<key>highlightClicks</key>
 	<true/>
 	<key>keyboardOverlayPosition</key>
