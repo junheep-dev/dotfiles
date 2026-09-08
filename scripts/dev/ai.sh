@@ -38,6 +38,7 @@ ln -sf "$DOTFILES_DIR/agents/AGENTS.md" "$HOME/.claude/CLAUDE.md"
 for legacy_hook in \
   "$HOME/.claude/hooks/notify.sh" \
   "$HOME/.claude/hooks/notify-core.sh" \
+  "$HOME/.codex/hooks/notify.sh" \
   "$HOME/.codex/hooks/notify-core.sh"; do
   [[ -L "$legacy_hook" ]] && rm "$legacy_hook"
 done
@@ -55,10 +56,8 @@ print_step "Install Codex CLI"
 brew install codex
 
 print_step "Create configuration"
-mkdir -p "$HOME/.codex/hooks"
+mkdir -p "$HOME/.codex"
 ln -sf "$DOTFILES_DIR/codex/hooks.json" "$HOME/.codex/hooks.json"
-# Existing config.toml notify chains may still call this compatibility wrapper.
-ln -sf "$DOTFILES_DIR/codex/hooks/notify.sh" "$HOME/.codex/hooks/notify.sh"
 ln -sf "$DOTFILES_DIR/agents/AGENTS.md" "$HOME/.codex/AGENTS.md"
 # skills are shared with Codex via the Agent Skills standard directory
 mkdir -p "$HOME/.agents/skills"

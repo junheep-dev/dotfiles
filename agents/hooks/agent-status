@@ -3,15 +3,17 @@
 set -u
 
 status_dir="${AGENT_STATUS_DIR:-/tmp/agent-status-$(id -u)}"
-tmux_bin="${AGENT_STATUS_TMUX:-$(command -v tmux 2>/dev/null || true)}"
-nvim_bin="${AGENT_STATUS_NVIM:-$(command -v nvim 2>/dev/null || true)}"
+tmux_bin="$(command -v tmux 2>/dev/null || true)"
+nvim_bin="$(command -v nvim 2>/dev/null || true)"
+ancestor_pids=""
+agent_pid=""
 
 mkdir -p "$status_dir"
 chmod 700 "$status_dir" 2>/dev/null || true
 
 state_path() {
-  local source="$1" session_id="$2" key
-  key=$(printf '%s' "$source:$session_id" | shasum -a 256 | awk '{print $1}')
+  local source="$1" agent_pid="$2" key
+  key=$(printf '%s' "$source:$agent_pid" | shasum -a 256 | awk '{print $1}')
   printf '%s/%s.json' "$status_dir" "$key"
 }
 
@@ -45,6 +47,7 @@ EOF
 refresh_tmux() {
   local client
   [ -n "$tmux_bin" ] || return 0
+  publish_status
   "$tmux_bin" list-clients -F '#{client_name}' 2>/dev/null | while IFS= read -r client; do
     [ -n "$client" ] && "$tmux_bin" refresh-client -t "$client" -S 2>/dev/null || true
   done
@@ -59,10 +62,20 @@ notify_nvim() {
     >/dev/null 2>&1 &
 }
 
-process_ancestors() {
-  local pid="$PPID" parent depth=0 output=""
+# Walks up from the hook process, recording the ancestor chain and picking out
+# the agent process itself. State is keyed on that process rather than on the
+# session id: one codex process runs several threads of its own (title
+# generation, review), and each would otherwise claim its own status badge.
+scan_ancestors() {
+  local source="$1" pid="$PPID" parent comm depth=0
+  ancestor_pids=""
+  agent_pid=""
   while [ "$pid" -gt 1 ] 2>/dev/null && [ "$depth" -lt 16 ]; do
-    output="${output}${output:+,}${pid}"
+    ancestor_pids="${ancestor_pids}${ancestor_pids:+,}${pid}"
+    if [ -z "$agent_pid" ]; then
+      comm=$(ps -o comm= -p "$pid" 2>/dev/null | sed 's|.*/||')
+      [ "$comm" != "$source" ] || agent_pid="$pid"
+    fi
     parent=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
     case "$parent" in
       ''|*[!0-9]*) break ;;
@@ -71,7 +84,7 @@ process_ancestors() {
     pid="$parent"
     depth=$((depth + 1))
   done
-  printf '%s' "$output"
+  [ -n "$agent_pid" ] || agent_pid="$PPID"
 }
 
 is_visible() {
@@ -98,7 +111,6 @@ is_visible() {
 
 send_notification() {
   local path="$1" tty location message
-  [ "${AGENT_STATUS_SKIP_NOTIFY:-0}" = "1" ] && return
   is_visible "$path" && return
 
   tty=$(jq -r '.client_tty // empty' "$path")
@@ -110,13 +122,13 @@ send_notification() {
 }
 
 write_state() {
-  local source="$1" session_id="$2" phase="$3" unread="$4" message="$5"
-  local path pane window_id tmux_session location nvim client_line client_name client_tty
-  local ancestor_pids
-  local previous_phase previous_unread previous_tmux_unread temp notify_needed=true
+  local source="$1" agent_pid="$2" session_id="$3" phase="$4" unread="$5" message="$6"
+  local path pane tmux_session location nvim client_line client_name client_tty
+  local previous_phase previous_unread previous_tmux_unread previous_session_id
+  local temp notify_needed=true
   local tmux_unread="$unread"
 
-  path=$(state_path "$source" "$session_id")
+  path=$(state_path "$source" "$agent_pid")
   pane="${TMUX_PANE:-}"
   nvim="${NVIM:-}"
 
@@ -125,6 +137,15 @@ write_state() {
     [ -n "$nvim" ] || nvim=$(jq -r '.nvim // empty' "$path")
     previous_phase=$(jq -r '.phase // empty' "$path")
     previous_unread=$(jq -r '.unread // false' "$path")
+    previous_session_id=$(jq -r '.session_id // empty' "$path")
+    # An agent process runs threads of its own alongside the conversation, and
+    # theirs are short. Letting one report "done" over a turn that is still
+    # going would hand the bar a finished badge for work still in flight.
+    if [ "$previous_session_id" != "$session_id" ]; then
+      case "$previous_phase" in
+        running|waiting) return ;;
+      esac
+    fi
     previous_tmux_unread=$(jq -r 'if has("tmux_unread") then .tmux_unread else (.unread // false) end' "$path")
     if [ "$previous_phase" = "$phase" ] && [ "$previous_unread" = "$unread" ]; then
       notify_needed=false
@@ -132,7 +153,10 @@ write_state() {
     fi
   fi
 
-  window_id=$(tmux_value "$pane" '#{window_id}')
+  # Neither display can reach an agent outside tmux and outside nvim, so
+  # recording one would only leave a file nothing ever shows or clears.
+  [ -n "$pane" ] || [ -n "$nvim" ] || return
+
   tmux_session=$(tmux_value "$pane" '#{session_name}')
   location=$(tmux_value "$pane" '#{session_name}:#{window_index}.#{pane_index} #{window_name}')
   [ -n "$location" ] || location="Agent"
@@ -140,18 +164,17 @@ write_state() {
   client_line=$(client_details "$tmux_session")
   client_name=$(printf '%s' "$client_line" | cut -f2)
   client_tty=$(printf '%s' "$client_line" | cut -f4)
-  ancestor_pids=$(process_ancestors)
 
   temp=$(mktemp "$status_dir/.state.XXXXXX")
   jq -n \
     --arg source "$source" \
     --arg session_id "$session_id" \
+    --argjson agent_pid "$agent_pid" \
     --arg phase "$phase" \
     --argjson unread "$unread" \
     --argjson tmux_unread "$tmux_unread" \
     --arg message "$message" \
     --arg pane "$pane" \
-    --arg window_id "$window_id" \
     --arg tmux_session "$tmux_session" \
     --arg location "$location" \
     --arg client_name "$client_name" \
@@ -161,12 +184,12 @@ write_state() {
     '{
       source: $source,
       session_id: $session_id,
+      agent_pid: $agent_pid,
       phase: $phase,
       unread: $unread,
       tmux_unread: $tmux_unread,
       message: $message,
       pane: $pane,
-      window_id: $window_id,
       tmux_session: $tmux_session,
       location: $location,
       client_name: $client_name,
@@ -185,8 +208,8 @@ write_state() {
 }
 
 remove_state() {
-  local source="$1" session_id="$2" path nvim
-  path=$(state_path "$source" "$session_id")
+  local source="$1" agent_pid="$2" path nvim
+  path=$(state_path "$source" "$agent_pid")
   [ -f "$path" ] || return
   nvim=$(jq -r '.nvim // empty' "$path")
   rm -f "$path"
@@ -206,39 +229,17 @@ remove_path() {
 }
 
 prune_stale_states() {
-  local file pane resolved_pane nvim changed=false stale
+  local file pid nvim changed=false
 
   for file in "$status_dir"/*.json; do
     [ -f "$file" ] || continue
-    nvim=$(jq -r '.nvim // empty' "$file")
-    stale=false
-    if [ -n "$nvim" ] && [ ! -S "$nvim" ]; then
-      stale=true
-    else
-      pane=$(jq -r '.pane // empty' "$file")
-      [ -n "$tmux_bin" ] && [ -n "$pane" ] || continue
-      resolved_pane=$("$tmux_bin" display-message -t "$pane" -p '#{pane_id}' 2>/dev/null || true)
-      [ "$resolved_pane" != "$pane" ] && stale=true
+    pid=$(jq -r '.agent_pid // empty' "$file")
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+      continue
     fi
-    [ "$stale" = true ] || continue
+    nvim=$(jq -r '.nvim // empty' "$file")
     rm -f "$file"
     notify_nvim "$file" "$nvim"
-    changed=true
-  done
-
-  [ "$changed" = false ] || refresh_tmux
-}
-
-remove_superseded_direct_states() {
-  local keep_path="$1" pane="$2" file changed=false
-  [ -n "$pane" ] && [ -z "${NVIM:-}" ] || return
-
-  for file in "$status_dir"/*.json; do
-    [ -f "$file" ] || continue
-    [ "$file" != "$keep_path" ] || continue
-    [ "$(jq -r '.pane // empty' "$file")" = "$pane" ] || continue
-    [ -z "$(jq -r '.nvim // empty' "$file")" ] || continue
-    rm -f "$file"
     changed=true
   done
 
@@ -248,30 +249,27 @@ remove_superseded_direct_states() {
 handle_event() {
   local source="$1" payload session_id event_type notification_type message phase unread path
   payload=$(cat)
-  session_id=$(json_value "$payload" '.session_id // .["thread-id"]')
+  session_id=$(json_value "$payload" '.session_id')
   event_type=$(json_value "$payload" '.hook_event_name // .type')
   notification_type=$(json_value "$payload" '.notification_type')
-  message=$(json_value "$payload" '.last_assistant_message // .["last-assistant-message"] // .message')
+  message=$(json_value "$payload" '.last_assistant_message // .message')
   message=$(printf '%s' "$message" | head -1 | cut -c1-240)
 
-  if [ "$event_type" = "agent-turn-complete" ]; then
-    event_type="Stop"
-  fi
-  [ -n "$session_id" ] || session_id="${TMUX_PANE:-$PPID}"
+  scan_ancestors "$source"
 
   case "$event_type" in
     SessionStart)
       prune_stale_states
-      remove_superseded_direct_states "$(state_path "$source" "$session_id")" "${TMUX_PANE:-}"
-      phase="idle"
-      unread=false
+      remove_state "$source" "$agent_pid"
+      printf '{}\n'
+      return
       ;;
     UserPromptSubmit)
       phase="running"
       unread=false
       ;;
     PostToolUse|PostToolUseFailure)
-      path=$(state_path "$source" "$session_id")
+      path=$(state_path "$source" "$agent_pid")
       if [ ! -f "$path" ] || [ "$(jq -r '.phase // empty' "$path")" != "waiting" ]; then
         printf '{}\n'
         return
@@ -307,7 +305,7 @@ handle_event() {
       [ -n "$message" ] || message="Agent finished"
       ;;
     SessionEnd)
-      remove_state "$source" "$session_id"
+      remove_state "$source" "$agent_pid"
       printf '{}\n'
       return
       ;;
@@ -317,95 +315,26 @@ handle_event() {
       ;;
   esac
 
-  write_state "$source" "$session_id" "$phase" "$unread" "$message"
+  write_state "$source" "$agent_pid" "$session_id" "$phase" "$unread" "$message"
   printf '{}\n'
 }
 
-render_pane_status() {
-  local pane="$1" files
-  [ -n "$pane" ] || return 0
-  files=("$status_dir"/*.json)
-  [ -f "${files[0]}" ] || return
-
-  jq -jrs --arg pane "$pane" '
-    def tmux_unread: if has("tmux_unread") then .tmux_unread else (.unread // false) end;
-    def badge($symbol; $count):
-      if $count == 0 then ""
-      elif $count == 1 then " " + $symbol
-      else " " + $symbol + ($count | tostring)
-      end;
-    map(select((.pane // "") == $pane)) as $states
-    | badge("●"; [$states[] | select(.phase == "running")] | length)
-      + badge("?"; [$states[] | select(.phase == "waiting")] | length)
-      + badge("!"; [$states[] | select(.phase == "done" and tmux_unread)] | length)
-  ' "${files[@]}" 2>/dev/null
-}
-
-render_tmux_status() {
-  local field="$1" value="$2" files pane_map
-  [ -n "$value" ] || return 0
-  files=("$status_dir"/*.json)
-  [ -f "${files[0]}" ] || return
-  [ -n "$tmux_bin" ] || return
-  pane_map=$("$tmux_bin" list-panes -a -F $'#{pane_id}\t#{session_id}\t#{window_id}' 2>/dev/null) || return
-
-  jq -jrs --arg field "$field" --arg value "$value" --arg pane_map "$pane_map" '
-    def tmux_unread: if has("tmux_unread") then .tmux_unread else (.unread // false) end;
-    def badge($symbol; $count):
-      if $count == 0 then ""
-      elif $count == 1 then " " + $symbol
-      else " " + $symbol + ($count | tostring)
-      end;
-    ($pane_map
-      | split("\n")
-      | map(
-          split("\t")
-          | select(length == 3)
-          | {key: .[0], value: {session_id: .[1], window_id: .[2]}}
-        )
-      | from_entries
-    ) as $panes
-    | map(select(($panes[.pane // ""][$field] // "") == $value)) as $states
-    | badge("●"; [$states[] | select(.phase == "running")] | length)
-      + badge("?"; [$states[] | select(.phase == "waiting")] | length)
-      + badge("!"; [$states[] | select(.phase == "done" and tmux_unread)] | length)
-  ' "${files[@]}" 2>/dev/null
-}
-
-sync_tree_status() {
-  local target status
+# Recomputes every badge in one pass and stores it on the matching tmux object.
+# Drawing the status line then costs nothing but a format lookup, and the
+# renderer no longer has to reach into the state directory to draw a bar.
+#
+# One `list-panes -a` describes the whole tree: every window holds a pane and
+# every session holds a window, so panes, windows and sessions are all derived
+# from it. Sessions also get the badge summary of the *other* sessions, since
+# the bar can only switch sessions and per-window entries would imply a jump it
+# cannot offer.
+publish_status() {
+  local panes states files updates scope target option value
+  local -a args
   [ -n "$tmux_bin" ] || return 0
 
-  while IFS= read -r target; do
-    [ -n "$target" ] || continue
-    status=$(render_tmux_status session_id "$target")
-    "$tmux_bin" set-option -q -t "$target" @agent_status_session "$status"
-  done < <("$tmux_bin" list-sessions -F '#{session_id}')
-
-  while IFS= read -r target; do
-    [ -n "$target" ] || continue
-    status=$(render_tmux_status window_id "$target")
-    "$tmux_bin" set-option -qw -t "$target" @agent_status_window "$status"
-  done < <("$tmux_bin" list-windows -a -F '#{window_id}' | sort -u)
-
-  while IFS= read -r target; do
-    [ -n "$target" ] || continue
-    status=$(render_pane_status "$target")
-    "$tmux_bin" set-option -qp -t "$target" @agent_status_pane "$status"
-  done < <("$tmux_bin" list-panes -a -F '#{pane_id}')
-}
-
-# Lists the sessions other than the current one that have live agent activity,
-# with a badge summarising it across their windows. Windows are deliberately
-# not listed: the bar can only switch sessions, so showing per-window entries
-# would imply a jump the status line cannot offer.
-render_other_sessions() {
-  local current_session="$1" accent="${2:-}" files states window_map pane_map
-  [ -n "$tmux_bin" ] || return
-  prune_stale_states
-
-  window_map=$("$tmux_bin" list-windows -a -F $'#{session_id}\t#{session_name}\t#{window_id}' 2>/dev/null) || return
-  pane_map=$("$tmux_bin" list-panes -a -F $'#{pane_id}\t#{window_id}' 2>/dev/null) || return
+  panes=$("$tmux_bin" list-panes -a -F $'#{pane_id}\t#{session_id}\t#{session_name}\t#{window_id}' 2>/dev/null) || return 0
+  [ -n "$panes" ] || return 0
 
   states='[]'
   files=("$status_dir"/*.json)
@@ -413,55 +342,79 @@ render_other_sessions() {
     states=$(jq -s '.' "${files[@]}" 2>/dev/null) || states='[]'
   fi
 
-  jq -jn \
-    --arg current "$current_session" \
-    --arg accent "$accent" \
-    --arg window_map "$window_map" \
-    --arg pane_map "$pane_map" \
-    --argjson states "$states" '
-    def escape_format: gsub("#"; "##");
+  updates=$(jq -rn --arg panes "$panes" --argjson states "$states" '
     def tmux_unread: if has("tmux_unread") then .tmux_unread else (.unread // false) end;
     def badge($symbol; $count):
       if $count == 0 then ""
       elif $count == 1 then " " + $symbol
       else " " + $symbol + ($count | tostring)
       end;
-    def colour($value): if $value == "" then "" else "#[fg=" + $value + "]" end;
+    def badges:
+      badge("●"; map(select(.phase == "running")) | length)
+      + badge("?"; map(select(.phase == "waiting")) | length)
+      + badge("!"; map(select(.phase == "done" and tmux_unread)) | length);
+    def escape_format: gsub("#"; "##");
 
-    ($pane_map
+    ($panes
       | split("\n")
-      | map(split("\t") | select(length == 2) | {key: .[0], value: .[1]})
-      | from_entries
-    ) as $pane_window
-    | ($states
-      | map(.window = ($pane_window[.pane // ""] // ""))
-      | map(select(.window != ""))
-    ) as $live
-    | $window_map
-    | split("\n")
-    | map(
-        split("\t")
-        | select(length == 3)
-        | {session_id: .[0], session_name: .[1], window_id: .[2]}
-      )
-    | map(select(.session_name != $current))
-    | group_by(.session_id)
-    | sort_by(.[0].session_name)
-    | map(
-        ([.[].window_id]) as $ids
-        | ($live | map(select(.window as $w | $ids | index($w) != null))) as $states
-        | (badge("●"; [$states[] | select(.phase == "running")] | length)
-           + badge("?"; [$states[] | select(.phase == "waiting")] | length)
-           + badge("!"; [$states[] | select(.phase == "done" and tmux_unread)] | length)
-          ) as $badges
-        | select($badges != "")
-        | "#[range=session|" + .[0].session_id + "]" + colour($accent)
-          + (.[0].session_name | escape_format)
-          + $badges
-          + "#[norange]"
-      )
-    | if length == 0 then "" else join("  ") + "  " end
-  ' 2>/dev/null
+      | map(
+          split("\t")
+          | select(length == 4)
+          | {pane: .[0], session_id: .[1], session_name: .[2], window_id: .[3]}
+        )
+    ) as $layout
+    | ($layout | map({key: .pane, value: .}) | from_entries) as $by_pane
+    | [ $states[]
+        | . as $state
+        | ($by_pane[$state.pane // ""] // empty) as $seat
+        | $state + {session_id: $seat.session_id, window_id: $seat.window_id}
+      ] as $live
+    | ($layout
+        | group_by(.session_id)
+        | map(.[0] as $head | {
+            id: $head.session_id,
+            name: $head.session_name,
+            badges: ([$live[] | select(.session_id == $head.session_id)] | badges)
+          })
+        | sort_by(.name)
+    ) as $sessions
+    | [ $layout[]
+        | .pane as $pane
+        | ["pane", $pane, "@agent_status_pane",
+           ([$live[] | select(.pane == $pane)] | badges)]
+      ]
+      + [ $layout | map(.window_id) | unique | .[] as $window
+          | ["window", $window, "@agent_status_window",
+             ([$live[] | select(.window_id == $window)] | badges)]
+        ]
+      + [ $sessions[]
+          | ["session", .id, "@agent_status_session", .badges]
+        ]
+      + [ $sessions[]
+          | . as $self
+          | ["session", $self.id, "@agent_status_others",
+             ([ $sessions[]
+                | select(.id != $self.id and .badges != "")
+                | "#[range=session|" + .id + "]" + (.name | escape_format) + .badges + "#[norange]"
+              ] | if length == 0 then "" else join("  ") + "  " end)]
+        ]
+    | .[]
+    | @tsv
+  ' 2>/dev/null) || return 0
+  [ -n "$updates" ] || return 0
+
+  args=()
+  while IFS=$'\t' read -r scope target option value; do
+    [ -n "$scope" ] || continue
+    [ ${#args[@]} -eq 0 ] || args+=(";")
+    case "$scope" in
+      pane) args+=(set-option -qp -t "$target" "$option" "$value") ;;
+      window) args+=(set-option -qw -t "$target" "$option" "$value") ;;
+      session) args+=(set-option -q -t "$target" "$option" "$value") ;;
+    esac
+  done <<<"$updates"
+
+  [ ${#args[@]} -eq 0 ] || "$tmux_bin" "${args[@]}" 2>/dev/null || true
 }
 
 acknowledge_file() {
@@ -529,25 +482,9 @@ case "${1:-}" in
   event)
     handle_event "${2:-agent}"
     ;;
-  legacy)
-    legacy_payload="${3-}"
-    [ -n "$legacy_payload" ] || legacy_payload='{}'
-    printf '%s' "$legacy_payload" | handle_event "${2:-agent}"
-    ;;
-  render)
-    render_tmux_status window_id "${2:-}"
-    ;;
-  render-pane)
-    render_pane_status "${2:-}"
-    ;;
-  render-session)
-    render_tmux_status session_id "${2:-}"
-    ;;
-  sync-tree-status)
-    sync_tree_status
-    ;;
-  render-sessions)
-    render_other_sessions "${2:-}" "${3:-}"
+  refresh)
+    prune_stale_states
+    refresh_tmux
     ;;
   acknowledge-path)
     acknowledge_path "${2:-}"
@@ -565,7 +502,7 @@ case "${1:-}" in
     prune_stale_states
     ;;
   *)
-    printf 'usage: agent-status {event|legacy|render|render-pane|render-session|render-sessions|sync-tree-status|acknowledge-path|acknowledge-pane|remove-pane|remove-path|prune}\n' >&2
+    printf 'usage: agent-status {event|refresh|acknowledge-path|acknowledge-pane|remove-pane|remove-path|prune}\n' >&2
     exit 2
     ;;
 esac
