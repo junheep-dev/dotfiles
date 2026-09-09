@@ -59,5 +59,10 @@ eval "$(fzf --zsh)"
 # ripgrep: search hidden files (dotfiles) by default
 export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
 
+# agent-browser: save session state only on close, not every 30s
+# periodic autosave flashes a temporary tab and steals focus in headed Chrome
+# https://github.com/vercel-labs/agent-browser/issues/1688
+export AGENT_BROWSER_AUTOSAVE_INTERVAL_MS=0
+
 # gwt shell integration
 eval "$(command gwt shell init zsh)"
