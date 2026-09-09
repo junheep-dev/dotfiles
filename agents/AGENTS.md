@@ -81,3 +81,42 @@ Unless the user explicitly asks for a separate issue attachment, upload images
 intended for an issue description or comment to Linear storage and embed the
 returned asset URL in Markdown. Do not use `attachmentCreate` for these inline
 images.
+
+## Browser Automation
+
+Use `agent-browser` for browser work.
+
+Personal automation always uses a persistent profile:
+
+```bash
+agent-browser --profile ~/.agent-browser/profiles/personal open <url>
+```
+
+Give `--profile` a path, never a Chrome profile name; a name is copied to a
+temp directory each launch and keeps nothing.
+
+In a project, scope the session to the worktree so parallel branches get
+separate browsers, and key `--restore` to the repo so they share one login:
+
+```bash
+agent-browser --session "$(agent-browser session id --scope worktree --prefix <repo>)" --restore <repo> open <url>
+```
+
+`--restore` carries cookies and localStorage, not IndexedDB or service workers;
+switch to `--profile <path>` if a flow needs them.
+
+Log in once in a headed window. On expiry use the `agent-browser auth` vault
+rather than logging in by hand; 2FA still needs a person.
+
+The vault is global, so run `auth list` first and reuse a match instead of
+adding a near-duplicate. Name a new one `<service>-<qualifier>`, qualified only
+enough to tell it from that service's other entries (`myapp-prod`,
+`myapp-prod-admin`, or just `github`); `auth list` shows the username and URL,
+so leave those out.
+
+Never put a password in a command argument, a prompt, or the chat. If no
+profile fits, ask me to create one:
+
+```bash
+agent-browser auth save <name> --url <login-url> --username <user> --password-stdin
+```
