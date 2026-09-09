@@ -10,6 +10,7 @@
 	gpgsign = true
 [alias]
   lg = log --color --graph --pretty=format:'%C(auto)%h%Creset -%C(auto)%d%Creset %s %Cgreen(%cr)%Creset %C(blue)<%an>%Creset' --abbrev-commit
+	prune-gone = !git fetch --prune && git for-each-ref --format \"%(HEAD)|%(refname:short)|%(upstream:track)\" refs/heads | awk -F\"|\" '$1 != \"*\" && $3 == \"[gone]\" {print $2}' | xargs git branch -D
 [rerere]
 	enabled = true
 [rebase]
