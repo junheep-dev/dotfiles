@@ -8,6 +8,10 @@ DOTFILES_DIR="${0:A:h}"
 source "$DOTFILES_DIR/scripts/utils.sh"
 
 PREFS_DIR="$DOTFILES_DIR/prefs"
+# The snapshot as of the last successful export or import. It is what tells a
+# local edit apart from a snapshot that arrived newer via git, so it stays out
+# of the repo - every machine has its own.
+BASELINE_DIR="$HOME/Library/Application Support/dotfiles/prefs"
 AGENT_LABEL="com.junhee.dotfiles.prefs-export"
 AGENT_PLIST="$HOME/Library/LaunchAgents/$AGENT_LABEL.plist"
 
@@ -117,19 +121,24 @@ with open(sys.argv[2], "wb") as f:
 PY
 }
 
+# Compares the live settings, the snapshot and the baseline. Only a change made
+# on this machine is written back; a snapshot that moved ahead of the baseline
+# came from another machine and must not be overwritten with stale values.
 cmd_export() {
   print_section "Export app preferences"
-  mkdir -p "$PREFS_DIR"
+  mkdir -p "$PREFS_DIR" "$BASELINE_DIR"
 
   local tmp
   tmp=$(mktemp -d)
   trap "rm -rf '$tmp'" EXIT
 
-  local entry domain snapshot raw counts
+  local entry domain snapshot baseline raw live counts
   for entry in "${DOMAINS[@]}"; do
     domain="${entry%%:*}"
     snapshot="$PREFS_DIR/$domain.plist"
+    baseline="$BASELINE_DIR/$domain.plist"
     raw="$tmp/$domain.plist"
+    live="$tmp/live.plist"
 
     print_header "$domain"
     if ! defaults export "$domain" "$raw" 2>/dev/null; then
@@ -144,17 +153,40 @@ cmd_export() {
       continue
     fi
 
-    if ! counts=$(select_keys "$raw" "$tmp/selected.plist" "${#SECRETS[@]}" "${SECRETS[@]}" "${keeps[@]}"); then
+    if ! counts=$(select_keys "$raw" "$live" "${#SECRETS[@]}" "${SECRETS[@]}" "${keeps[@]}"); then
       print_error "Selection failed, snapshot left untouched"
       continue
     fi
 
-    if [[ -f "$snapshot" ]] && cmp -s "$tmp/selected.plist" "$snapshot"; then
-      print_step "unchanged ($counts keys)"
-    else
-      mv "$tmp/selected.plist" "$snapshot"
-      print_step "updated ($counts keys)"
+    if [[ ! -f "$snapshot" ]]; then
+      cp "$live" "$snapshot"
+      cp "$live" "$baseline"
+      print_step "created ($counts keys)"
+      continue
     fi
+
+    # Seeding from the live settings rather than the snapshot: on a machine that
+    # has pulled but not imported, seeding from the snapshot would read the stale
+    # live values as a local edit and export them over the newer ones.
+    [[ -f "$baseline" ]] || cp "$live" "$baseline"
+
+    if cmp -s "$live" "$baseline"; then
+      if cmp -s "$snapshot" "$baseline"; then
+        print_step "unchanged ($counts keys)"
+      else
+        print_step "skipped - snapshot is newer, run ./prefs.sh import"
+      fi
+      continue
+    fi
+
+    if ! cmp -s "$snapshot" "$baseline"; then
+      print_error "skipped - the snapshot and this machine both changed"
+      continue
+    fi
+
+    cp "$live" "$snapshot"
+    cp "$live" "$baseline"
+    print_step "updated ($counts keys)"
   done
 
   print_success "Export complete"
@@ -167,11 +199,14 @@ cmd_import() {
   tmp=$(mktemp -d)
   trap "rm -rf '$tmp'" EXIT
 
-  local entry domain app snapshot
+  mkdir -p "$BASELINE_DIR"
+
+  local entry domain app snapshot baseline
   for entry in "${DOMAINS[@]}"; do
     domain="${entry%%:*}"
     app="${entry#*:}"
     snapshot="$PREFS_DIR/$domain.plist"
+    baseline="$BASELINE_DIR/$domain.plist"
 
     print_header "$app"
     if [[ ! -f "$snapshot" ]]; then
@@ -192,6 +227,7 @@ cmd_import() {
     fi
 
     if defaults import "$domain" "$tmp/expanded.plist"; then
+      cp "$snapshot" "$baseline"
       print_step "Imported $domain"
       open -a "$app" 2>/dev/null
     else
