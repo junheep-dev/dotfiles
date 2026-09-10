@@ -10,8 +10,11 @@ Push first if the branch has no upstream.
 
 Take the scope from the full diff against the base branch — the PR covers the
 whole branch, including commits made before this session or by someone else.
-Take the reasoning from this session: why this approach, what was ruled out,
-which trade-off the reviewer would otherwise have to reconstruct from the diff.
+
+Say what the branch does, and add a decision only when a reviewer reading the
+diff would otherwise get it wrong — an unexpected choice, a constraint that
+isn't visible in the code, a sequencing dependency. Not a record of what you
+considered. If the diff already answers it, leave it out.
 
 Don't invent a rationale for a change you weren't part of. For those, describe
 what it does and leave it at that.
@@ -19,9 +22,20 @@ what it does and leave it at that.
 Title: same style as a commit subject — imperative mood, capitalized, no
 trailing period. It names the branch's change as a whole, not its last commit.
 
-Body: a 1–2 sentence summary, then bullets for the important changes only. No
-section headers, no minor details, no test plan or checklist unless the user
-asks for one.
+Body: one or two sentences saying what the branch does, then bullets only for
+the decisions that survived that filter, one sentence each. Often there are
+none, and the body is just the summary — a PR body with no bullets is a good
+one, not a lazy one. Never pad the list to have something in it.
+
+When the branch does two or more separable things, give each its own sentence
+or short paragraph in the summary instead of compressing them into one.
+
+Reasoning about the code itself belongs in a code comment; scope and
+alternatives belong in the Linear issue. The PR body is not where either gets
+archived.
+
+No section headers, no minor details, no test plan or checklist unless the
+user asks for one.
 
 Never link the Linear issue. The branch name already carries the issue
 identifier, which is what links the two and closes the issue on merge.
