@@ -45,6 +45,8 @@ reviewer. If so, capture them by running the app when that is possible;
 when it isn't, create the PR without them and note that screenshots can
 be added later. Don't block PR creation waiting on screenshots.
 
-Attach images with the `gh image` extension when it is installed.
+Attach images with the `gh image` extension when it is installed. The markdown
+it prints renders at the full width of the body; when that is too large, size
+the image with an `<img width>` tag instead.
 
 Report the PR URL. Do not merge it, and do not set the Linear issue to Done.
