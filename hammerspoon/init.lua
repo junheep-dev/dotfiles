@@ -93,7 +93,8 @@ hs.hotkey.bind({ "alt", "ctrl" }, "c", function()
   centerWindowWithSize(1800, 1200)
 end)
 
--- Lay out the focused window based on the display's aspect ratio (with GAP padding):
+-- Lay out the focused window based on the display's aspect ratio
+-- (GAP padding on the sides and bottom, flush against the top):
 --   Ultrawide (21:9+) → 80% width, centered
 --   Otherwise (built-in, 16:9 external) → maximize
 local GAP = 4
@@ -112,12 +113,12 @@ local function layoutWindow(win)
     return
   end
   local f = screen:frame()
-  local fullFrame = { x = f.x + GAP, y = f.y + GAP, w = f.w - 2 * GAP, h = f.h - 2 * GAP }
+  local fullFrame = { x = f.x + GAP, y = f.y, w = f.w - 2 * GAP, h = f.h - GAP }
   local standardFrame
 
   if f.w / f.h > ULTRAWIDE_RATIO then
     local w = f.w * 0.8
-    standardFrame = { x = f.x + (f.w - w) / 2, y = f.y + GAP, w = w, h = f.h - 2 * GAP }
+    standardFrame = { x = f.x + (f.w - w) / 2, y = f.y, w = w, h = f.h - GAP }
   else
     standardFrame = fullFrame
   end
