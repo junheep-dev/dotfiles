@@ -11,31 +11,36 @@ Push first if the branch has no upstream.
 Take the scope from the full diff against the base branch — the PR covers the
 whole branch, including commits made before this session or by someone else.
 
-Say what the branch does, and add a decision only when a reviewer reading the
-diff would otherwise get it wrong — an unexpected choice, a constraint that
-isn't visible in the code, a sequencing dependency. Not a record of what you
-considered. If the diff already answers it, leave it out.
-
 Don't invent a rationale for a change you weren't part of. For those, describe
 what it does and leave it at that.
 
 Title: same style as a commit subject — imperative mood, capitalized, no
 trailing period. It names the branch's change as a whole, not its last commit.
 
-Body: one or two sentences saying what the branch does, then bullets only for
-the decisions that survived that filter, one sentence each. Often there are
-none, and the body is just the summary — a PR body with no bullets is a good
-one, not a lazy one. Never pad the list to have something in it.
+Body: two or three sentences saying what the branch does. Then bullets only
+for decisions a reviewer would otherwise get wrong — an unexpected choice, a
+constraint that isn't visible in the code, a sequencing dependency — one
+sentence each. Usually there are none, and the body is just the summary. A PR
+body with no bullets is a good one, not a lazy one; never pad the list to have
+something in it.
 
 When the branch does two or more separable things, give each its own sentence
-or short paragraph in the summary instead of compressing them into one.
+instead of compressing them into one.
 
-Reasoning about the code itself belongs in a code comment; scope and
-alternatives belong in the Linear issue. The PR body is not where either gets
-archived.
+The diff says what changed, CI says whether it works, and the issue says why
+it was asked for. Anything the body repeats from those three makes it longer
+without making it more useful. What's left over is the body, and it is short.
 
-No section headers, no minor details, no test plan or checklist unless the
-user asks for one.
+Durable reasoning belongs in none of them — it goes in a code comment, where
+the next reader of that code finds it, rather than in a body that stops being
+read once the PR merges.
+
+Keep the body under 120 words, screenshots and their captions aside. When it
+runs longer, that isn't a body to trim: move what overflows to the comment or
+the issue where it belongs.
+
+No section headers. A body that needs them is too long. No test plan or
+checklist unless the user asks for one.
 
 Never link the Linear issue. The branch name already carries the issue
 identifier, which is what links the two and closes the issue on merge.
