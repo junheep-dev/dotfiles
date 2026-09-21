@@ -2,10 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>allowAnyShortcut</key>
-	<true/>
-	<key>alternateDefaultShortcuts</key>
-	<true/>
 	<key>cycleSizesIsChanged</key>
 	<true/>
 	<key>gapSize</key>
@@ -16,8 +12,6 @@
 	<true/>
 	<key>selectedCycleSizes</key>
 	<integer>26</integer>
-	<key>showAdditionalSizesInMenu</key>
-	<integer>2</integer>
 	<key>skipGapTopEdge</key>
 	<true/>
 	<key>subsequentExecutionMode</key>

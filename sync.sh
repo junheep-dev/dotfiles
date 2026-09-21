@@ -1,8 +1,9 @@
 #!/bin/zsh
 
-# Syncs preferences for GUI apps that have no file-based config.
-# Their settings live only in a `defaults` domain, so we snapshot the domain
-# into prefs/, keeping only the keys listed below.
+# Syncs settings that cannot be symlinked because the app owns them and writes
+# them back: GUI apps whose settings live only in a `defaults` domain, and
+# config files an app rewrites from its own UI. Only the keys listed below are
+# snapshotted, so the rest of the app's state stays on this machine.
 
 DOTFILES_DIR="${0:A:h}"
 source "$DOTFILES_DIR/scripts/utils.sh"
@@ -10,16 +11,24 @@ source "$DOTFILES_DIR/scripts/utils.sh"
 PREFS_DIR="$DOTFILES_DIR/prefs"
 # The snapshot as of the last successful export or import. It is what tells a
 # local edit apart from a snapshot that arrived newer via git, so it stays out
-# of the repo - every machine has its own.
+# of the repo - every machine has its own. The path predates the rename to
+# sync.sh and is kept so existing baselines stay valid.
 BASELINE_DIR="$HOME/Library/Application Support/dotfiles/prefs"
-AGENT_LABEL="com.junhee.dotfiles.prefs-export"
+AGENT_LABEL="com.junhee.dotfiles.sync-export"
 AGENT_PLIST="$HOME/Library/LaunchAgents/$AGENT_LABEL.plist"
+LEGACY_AGENT_LABEL="com.junhee.dotfiles.prefs-export"
 
 # <defaults domain>:<process name to quit before importing>
 DOMAINS=(
   "com.knollsoft.Rectangle:Rectangle"
   "pl.maketheweb.cleanshotx:CleanShot X"
   "com.lwouis.alt-tab-macos:AltTab"
+)
+
+# <name>:<toml|json>:<config the app owns>:<snapshot, relative to the repo>
+FILES=(
+  "codex:toml:$HOME/.codex/config.toml:codex/config.toml"
+  "claude:json:$HOME/.claude/settings.json:claude/settings.json"
 )
 
 # Keys that must never reach a snapshot because the repo is public. The
@@ -39,8 +48,7 @@ keeps_for() {
       print -l \
         "gapSize" "skipGapTopEdge" \
         "selectedCycleSizes" "cycleSizesIsChanged" \
-        "subsequentExecutionMode" "showAdditionalSizesInMenu" \
-        "alternateDefaultShortcuts" "allowAnyShortcut" \
+        "subsequentExecutionMode" \
         "launchOnLogin" "hideMenubarIcon"
       ;;
     pl.maketheweb.cleanshotx)
@@ -57,10 +65,20 @@ keeps_for() {
       # (Preferences.swift: baseName + (index == 0 ? "" : String(index + 1))).
       # Only set 1 is synced; the rest falls back to AltTab's defaults.
       print -l \
-        "holdShortcut" "shortcutStyle" \
-        "appsToShow" "spacesToShow" "screensToShow" \
-        "showHiddenWindows" "showMinimizedWindows" "showWindowlessApps" \
-        "windowDisplayDelay"
+        "holdShortcut" \
+        "spacesToShow" "screensToShow" "showWindowlessApps"
+      ;;
+    # Dotted paths rather than flat keys, since TOML nests. Everything else in
+    # config.toml is state Codex writes for itself: absolute project paths,
+    # hook trust hashes, plugin caches and bundled app versions.
+    codex)
+      print -l \
+        "tui.whimsy" "tui.status_line" "tui.status_line_use_colors"
+      ;;
+    claude)
+      print -l \
+        "\$schema" "statusLine" "hooks" \
+        "attribution" "disableClaudeAiConnectors" "tui"
       ;;
   esac
 }
@@ -105,6 +123,70 @@ print(f"{len(data)} -> {len(kept)}")
 PY
 }
 
+# The counterpart of select_keys for config files. Both formats are filtered as
+# JSON; dasel converts TOML at either end because the system python has none,
+# and it reads stdin unless that is closed.
+select_file_keys() {
+  local format="$1" src="$2" dst="$3"
+  shift 3
+
+  case "$format" in
+    toml)
+      dasel -i toml -o json --var f="toml:file:$src" '$f' </dev/null >"$dst.raw.json" || return 1
+      ;;
+    json)
+      cp "$src" "$dst.raw.json" || return 1
+      ;;
+  esac
+
+  python3 - "$dst.raw.json" "$dst.kept.json" "$@" <<'PY' || return 1
+import json, sys
+
+src, dst = sys.argv[1], sys.argv[2]
+paths = sys.argv[3:]
+
+with open(src) as f:
+    data = json.load(f)
+
+def leaves(node):
+    return sum(leaves(v) if isinstance(v, dict) else 1 for v in node.values())
+
+kept, missing = {}, []
+for path in paths:
+    parts = path.split(".")
+    node = data
+    for part in parts:
+        if not isinstance(node, dict) or part not in node:
+            node = None
+            break
+        node = node[part]
+    if node is None:
+        missing.append(path)
+        continue
+    target = kept
+    for part in parts[:-1]:
+        target = target.setdefault(part, {})
+    target[parts[-1]] = node
+
+if missing:
+    print(f"no key matched: {', '.join(missing)}", file=sys.stderr)
+
+with open(dst, "w") as f:
+    json.dump(kept, f, sort_keys=True)
+
+print(f"{leaves(data)} -> {leaves(kept)}")
+PY
+
+  case "$format" in
+    toml)
+      dasel -i json -o toml --var f="json:file:$dst.kept.json" '$f' </dev/null >"$dst"
+      ;;
+    json)
+      jq -S '.' "$dst.kept.json" >"$dst"
+      ;;
+  esac
+}
+
 # Undoes the export-side rewrite: "~/..." becomes this machine's home.
 expand_paths() {
   python3 - "$1" "$2" <<'PY'
@@ -124,15 +206,51 @@ PY
 # Compares the live settings, the snapshot and the baseline. Only a change made
 # on this machine is written back; a snapshot that moved ahead of the baseline
 # came from another machine and must not be overwritten with stale values.
+sync_snapshot() {
+  local live="$1" snapshot="$2" baseline="$3" counts="$4"
+
+  if [[ ! -f "$snapshot" ]]; then
+    cp "$live" "$snapshot"
+    cp "$live" "$baseline"
+    print_step "created ($counts keys)"
+    return
+  fi
+
+  # Seeding from the live settings rather than the snapshot: on a machine that
+  # has pulled but not imported, seeding from the snapshot would read the stale
+  # live values as a local edit and export them over the newer ones.
+  [[ -f "$baseline" ]] || cp "$live" "$baseline"
+
+  if cmp -s "$live" "$baseline"; then
+    if cmp -s "$snapshot" "$baseline"; then
+      print_step "unchanged ($counts keys)"
+    else
+      print_step "skipped - snapshot is newer, run ./sync.sh import"
+    fi
+    return
+  fi
+
+  if ! cmp -s "$snapshot" "$baseline"; then
+    print_error "skipped - the snapshot and this machine both changed"
+    return
+  fi
+
+  cp "$live" "$snapshot"
+  cp "$live" "$baseline"
+  print_step "updated ($counts keys)"
+}
+
 cmd_export() {
-  print_section "Export app preferences"
+  print_section "Export settings"
   mkdir -p "$PREFS_DIR" "$BASELINE_DIR"
 
   local tmp
   tmp=$(mktemp -d)
   trap "rm -rf '$tmp'" EXIT
 
-  local entry domain snapshot baseline raw live counts
+  local entry domain name format config snapshot baseline raw live counts
+  local -a keeps parts
+
   for entry in "${DOMAINS[@]}"; do
     domain="${entry%%:*}"
     snapshot="$PREFS_DIR/$domain.plist"
@@ -146,7 +264,6 @@ cmd_export() {
       continue
     fi
 
-    local -a keeps
     keeps=(${(f)"$(keeps_for "$domain")"})
     if (( ${#keeps} == 0 )); then
       print_error "No allowlist defined for $domain"
@@ -158,42 +275,43 @@ cmd_export() {
       continue
     fi
 
-    if [[ ! -f "$snapshot" ]]; then
-      cp "$live" "$snapshot"
-      cp "$live" "$baseline"
-      print_step "created ($counts keys)"
+    sync_snapshot "$live" "$snapshot" "$baseline" "$counts"
+  done
+
+  for entry in "${FILES[@]}"; do
+    parts=("${(@s.:.)entry}")
+    name="${parts[1]}"
+    format="${parts[2]}"
+    config="${parts[3]}"
+    snapshot="$DOTFILES_DIR/${parts[4]}"
+    baseline="$BASELINE_DIR/$name.$format"
+    live="$tmp/$name.$format"
+
+    print_header "$name"
+    if [[ ! -f "$config" ]]; then
+      print_error "No config at $config - is the app installed?"
       continue
     fi
 
-    # Seeding from the live settings rather than the snapshot: on a machine that
-    # has pulled but not imported, seeding from the snapshot would read the stale
-    # live values as a local edit and export them over the newer ones.
-    [[ -f "$baseline" ]] || cp "$live" "$baseline"
-
-    if cmp -s "$live" "$baseline"; then
-      if cmp -s "$snapshot" "$baseline"; then
-        print_step "unchanged ($counts keys)"
-      else
-        print_step "skipped - snapshot is newer, run ./prefs.sh import"
-      fi
+    keeps=(${(f)"$(keeps_for "$name")"})
+    if (( ${#keeps} == 0 )); then
+      print_error "No allowlist defined for $name"
       continue
     fi
 
-    if ! cmp -s "$snapshot" "$baseline"; then
-      print_error "skipped - the snapshot and this machine both changed"
+    if ! counts=$(select_file_keys "$format" "$config" "$live" "${keeps[@]}"); then
+      print_error "Selection failed, snapshot left untouched"
       continue
     fi
 
-    cp "$live" "$snapshot"
-    cp "$live" "$baseline"
-    print_step "updated ($counts keys)"
+    sync_snapshot "$live" "$snapshot" "$baseline" "$counts"
   done
 
   print_success "Export complete"
 }
 
 cmd_import() {
-  print_section "Import app preferences"
+  print_section "Import settings"
 
   local tmp
   tmp=$(mktemp -d)
@@ -235,13 +353,63 @@ cmd_import() {
     fi
   done
 
+  local name format config merged
+  local -a parts
+  for entry in "${FILES[@]}"; do
+    parts=("${(@s.:.)entry}")
+    name="${parts[1]}"
+    format="${parts[2]}"
+    config="${parts[3]}"
+    snapshot="$DOTFILES_DIR/${parts[4]}"
+    baseline="$BASELINE_DIR/$name.$format"
+    merged="$tmp/$name.$format"
+
+    print_header "$name"
+    if [[ ! -f "$snapshot" ]]; then
+      print_error "No snapshot at $snapshot"
+      continue
+    fi
+
+    # Merge rather than replace, for the same reason as the plists above: the
+    # snapshot holds only the curated keys and the rest of the file is the
+    # app's own state. A managed key the repo drops is not removed here, only
+    # left at whatever the app last wrote.
+    if [[ -f "$config" ]]; then
+      case "$format" in
+        toml)
+          dasel -i toml -o toml --unstable \
+            --var current="toml:file:$config" \
+            --var managed="toml:file:$snapshot" \
+            'merge($current, $managed)' </dev/null >"$merged"
+          ;;
+        json)
+          jq -s '.[0] * .[1]' "$config" "$snapshot" >"$merged"
+          ;;
+      esac
+      if (( $? != 0 )); then
+        print_error "Failed to merge $snapshot"
+        continue
+      fi
+    else
+      mkdir -p "${config:h}"
+      cp "$snapshot" "$merged"
+    fi
+
+    if mv "$merged" "$config"; then
+      cp "$snapshot" "$baseline"
+      print_step "Imported $name"
+    else
+      print_error "Failed to write $config"
+    fi
+  done
+
   print_success "Import complete"
 }
 
 # Runs once a day. StartCalendarInterval (unlike StartInterval) coalesces
 # missed firings and runs on the next wake, which matters on a laptop.
 cmd_install_agent() {
-  print_section "Install preferences export agent"
+  print_section "Install settings export agent"
 
   mkdir -p "$HOME/Library/LaunchAgents"
   cat > "$AGENT_PLIST" <<PLIST
@@ -253,7 +421,7 @@ cmd_install_agent() {
 	<string>$AGENT_LABEL</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>$DOTFILES_DIR/prefs.sh</string>
+		<string>$DOTFILES_DIR/sync.sh</string>
 		<string>export</string>
 	</array>
 	<key>StartCalendarInterval</key>
@@ -271,6 +439,10 @@ cmd_install_agent() {
 </plist>
 PLIST
 
+  # The agent used to be named after prefs.sh and still points at that path.
+  launchctl bootout "gui/$UID/$LEGACY_AGENT_LABEL" 2>/dev/null
+  rm -f "$HOME/Library/LaunchAgents/$LEGACY_AGENT_LABEL.plist"
+
   launchctl bootout "gui/$UID/$AGENT_LABEL" 2>/dev/null
   launchctl bootstrap "gui/$UID" "$AGENT_PLIST"
 
@@ -282,10 +454,10 @@ case "${1:-}" in
   import)        cmd_import ;;
   install-agent) cmd_install_agent ;;
   *)
-    echo "Usage: ./prefs.sh <export|import|install-agent>"
+    echo "Usage: ./sync.sh <export|import|install-agent>"
     echo
-    echo "  export         Snapshot app preferences into prefs/"
-    echo "  import         Apply prefs/ snapshots to this machine"
+    echo "  export         Snapshot app-owned settings into the repo"
+    echo "  import         Apply the snapshots to this machine"
     echo "  install-agent  Run export daily via launchd"
     exit 1
     ;;

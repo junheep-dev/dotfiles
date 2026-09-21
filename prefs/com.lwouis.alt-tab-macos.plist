@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>appsToShow</key>
-	<string>0</string>
 	<key>holdShortcut</key>
 	<dict>
 		<key>secureData</key>
@@ -22,17 +20,9 @@
 	</dict>
 	<key>screensToShow</key>
 	<string>1</string>
-	<key>shortcutStyle</key>
-	<string>0</string>
-	<key>showHiddenWindows</key>
-	<string>0</string>
-	<key>showMinimizedWindows</key>
-	<string>0</string>
 	<key>showWindowlessApps</key>
 	<string>1</string>
 	<key>spacesToShow</key>
 	<string>1</string>
-	<key>windowDisplayDelay</key>
-	<string>100</string>
 </dict>
 </plist>

@@ -23,9 +23,10 @@ brew install --cask logi-options+
 print_header "SoundSource"
 brew install --cask soundsource
 
-# Restores preferences for the apps above that store settings only in their
-# defaults domain, then schedules the daily snapshot.
-"$DOTFILES_DIR/prefs.sh" import
-"$DOTFILES_DIR/prefs.sh" install-agent
+# Restores the settings that cannot be symlinked - the apps above that keep
+# theirs in a defaults domain, and Codex's config.toml - then schedules the
+# daily snapshot.
+"$DOTFILES_DIR/sync.sh" import
+"$DOTFILES_DIR/sync.sh" install-agent
 
 print_success "Utilities setup complete"

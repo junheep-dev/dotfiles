@@ -1,40 +1,31 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "includeCoAuthoredBy": false,
-  "statusLine": {
-    "type": "command",
-    "command": "bash ~/.claude/statusline-command.sh"
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
   },
+  "disableClaudeAiConnectors": true,
   "hooks": {
-    "SessionStart": [
+    "Notification": [
       {
         "hooks": [
           {
-            "type": "command",
             "command": "~/.local/bin/agent-status event claude",
-            "timeout": 5
+            "timeout": 5,
+            "type": "command"
           }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.local/bin/agent-status event claude",
-            "timeout": 5
-          }
-        ]
+        ],
+        "matcher": "permission_prompt|idle_prompt|elicitation_dialog|elicitation_url_dialog|elicitation_complete|elicitation_response|agent_needs_input|agent_completed|quota_auto_resume_fired|quota_auto_resume_stale|quota_auto_resume_disabled"
       }
     ],
     "PostToolUse": [
       {
         "hooks": [
           {
-            "type": "command",
             "command": "~/.local/bin/agent-status event claude",
-            "timeout": 5
+            "timeout": 5,
+            "type": "command"
           }
         ]
       }
@@ -43,32 +34,9 @@
       {
         "hooks": [
           {
-            "type": "command",
             "command": "~/.local/bin/agent-status event claude",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "Notification": [
-      {
-        "matcher": "permission_prompt|idle_prompt|elicitation_dialog|elicitation_url_dialog|elicitation_complete|elicitation_response|agent_needs_input|agent_completed|quota_auto_resume_fired|quota_auto_resume_stale|quota_auto_resume_disabled",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.local/bin/agent-status event claude",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.local/bin/agent-status event claude",
-            "timeout": 5
+            "timeout": 5,
+            "type": "command"
           }
         ]
       }
@@ -77,12 +45,50 @@
       {
         "hooks": [
           {
-            "type": "command",
             "command": "~/.local/bin/agent-status event claude",
-            "timeout": 3
+            "timeout": 3,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "~/.local/bin/agent-status event claude",
+            "timeout": 5,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "~/.local/bin/agent-status event claude",
+            "timeout": 5,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "command": "~/.local/bin/agent-status event claude",
+            "timeout": 5,
+            "type": "command"
           }
         ]
       }
     ]
-  }
+  },
+  "statusLine": {
+    "command": "bash ~/.claude/statusline-command.sh",
+    "type": "command"
+  },
+  "tui": "default"
 }

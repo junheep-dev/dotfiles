@@ -1,4 +1,4 @@
 [tui]
-whimsy = false
-status_line = ["model-with-reasoning", "context-used", "git-branch"]
+status_line = ['model-with-reasoning', 'context-used', 'git-branch']
 status_line_use_colors = true
+whimsy = false

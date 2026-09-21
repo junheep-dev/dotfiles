@@ -16,4 +16,7 @@ source "$DOTFILES_DIR/scripts/dev/ai.sh"
 print_header "GitHub CLI"
 brew install gh
 
+print_header "dasel"
+brew install dasel
+
 print_success "Development tools setup complete"

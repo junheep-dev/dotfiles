@@ -9,31 +9,8 @@ print_step "Create configuration"
 mkdir -p "$HOME/.local/bin"
 ln -sf "$DOTFILES_DIR/agents/hooks/agent-status" "$HOME/.local/bin/agent-status"
 mkdir -p "$HOME/.claude/hooks"
-claude_settings="$HOME/.claude/settings.json"
-claude_settings_tmp=$(mktemp "$HOME/.claude/settings.XXXXXX")
-if [[ -f "$claude_settings" ]]; then
-  if ! jq -s '
-    .[0] as $current
-    | .[1] as $managed
-    | $current * $managed
-    | .hooks = $managed.hooks
-  ' "$claude_settings" "$DOTFILES_DIR/claude/settings.json" >"$claude_settings_tmp"; then
-    rm "$claude_settings_tmp"
-    print_error "Failed to merge Claude Code settings"
-    return 1
-  fi
-else
-  if ! cp "$DOTFILES_DIR/claude/settings.json" "$claude_settings_tmp"; then
-    rm "$claude_settings_tmp"
-    print_error "Failed to prepare Claude Code settings"
-    return 1
-  fi
-fi
-if ! mv "$claude_settings_tmp" "$claude_settings"; then
-  rm -f "$claude_settings_tmp"
-  print_error "Failed to install Claude Code settings"
-  return 1
-fi
+# settings.json is not symlinked - Claude Code rewrites it - so sync.sh merges
+# the managed keys into it instead.
 ln -sf "$DOTFILES_DIR/agents/AGENTS.md" "$HOME/.claude/CLAUDE.md"
 for legacy_hook in \
   "$HOME/.claude/hooks/notify.sh" \
@@ -54,34 +31,11 @@ print_header "Codex CLI"
 
 print_step "Install Codex CLI"
 brew install codex
-brew install dasel
 
 print_step "Create configuration"
 mkdir -p "$HOME/.codex"
-codex_config="$HOME/.codex/config.toml"
-codex_config_tmp=$(mktemp "$HOME/.codex/config.XXXXXX")
-if [[ -f "$codex_config" ]]; then
-  # dasel reads stdin unless it is closed, and merge() is gated behind --unstable.
-  if ! dasel -i toml -o toml --unstable \
-    --var current="toml:file:$codex_config" \
-    --var managed="toml:file:$DOTFILES_DIR/codex/config.toml" \
-    'merge($current, $managed)' </dev/null >"$codex_config_tmp"; then
-    rm "$codex_config_tmp"
-    print_error "Failed to merge Codex settings"
-    return 1
-  fi
-else
-  if ! cp "$DOTFILES_DIR/codex/config.toml" "$codex_config_tmp"; then
-    rm "$codex_config_tmp"
-    print_error "Failed to prepare Codex settings"
-    return 1
-  fi
-fi
-if ! mv "$codex_config_tmp" "$codex_config"; then
-  rm -f "$codex_config_tmp"
-  print_error "Failed to install Codex settings"
-  return 1
-fi
+# config.toml is not symlinked - Codex rewrites it - so sync.sh merges the
+# managed keys into it instead.
 ln -sf "$DOTFILES_DIR/codex/hooks.json" "$HOME/.codex/hooks.json"
 ln -sf "$DOTFILES_DIR/agents/AGENTS.md" "$HOME/.codex/AGENTS.md"
 # skills are shared with Codex via the Agent Skills standard directory
