@@ -54,9 +54,34 @@ print_header "Codex CLI"
 
 print_step "Install Codex CLI"
 brew install codex
+brew install dasel
 
 print_step "Create configuration"
 mkdir -p "$HOME/.codex"
+codex_config="$HOME/.codex/config.toml"
+codex_config_tmp=$(mktemp "$HOME/.codex/config.XXXXXX")
+if [[ -f "$codex_config" ]]; then
+  # dasel reads stdin unless it is closed, and merge() is gated behind --unstable.
+  if ! dasel -i toml -o toml --unstable \
+    --var current="toml:file:$codex_config" \
+    --var managed="toml:file:$DOTFILES_DIR/codex/config.toml" \
+    'merge($current, $managed)' </dev/null >"$codex_config_tmp"; then
+    rm "$codex_config_tmp"
+    print_error "Failed to merge Codex settings"
+    return 1
+  fi
+else
+  if ! cp "$DOTFILES_DIR/codex/config.toml" "$codex_config_tmp"; then
+    rm "$codex_config_tmp"
+    print_error "Failed to prepare Codex settings"
+    return 1
+  fi
+fi
+if ! mv "$codex_config_tmp" "$codex_config"; then
+  rm -f "$codex_config_tmp"
+  print_error "Failed to install Codex settings"
+  return 1
+fi
 ln -sf "$DOTFILES_DIR/codex/hooks.json" "$HOME/.codex/hooks.json"
 ln -sf "$DOTFILES_DIR/agents/AGENTS.md" "$HOME/.codex/AGENTS.md"
 # skills are shared with Codex via the Agent Skills standard directory
