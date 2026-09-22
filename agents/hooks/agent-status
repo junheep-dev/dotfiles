@@ -277,13 +277,6 @@ handle_event() {
       phase="running"
       unread=false
       ;;
-    # Codex has no Notification event; PermissionRequest is its stand-in for
-    # the permission_prompt case below.
-    PermissionRequest)
-      phase="waiting"
-      unread=true
-      [ -n "$message" ] || message="Agent needs approval"
-      ;;
     Notification)
       case "$notification_type" in
         idle_prompt|agent_completed)
