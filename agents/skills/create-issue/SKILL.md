@@ -12,7 +12,11 @@ branch:
   that fits.
 - Unrelated to it: leave it unassigned in Triage.
 
-Keep the issue description factual and terse — no ceremonial headers.
+Keep the issue description factual and terse — no ceremonial headers. Write only
+what someone picking it up needs to start: what's wanted, and the facts or
+decisions that shape it. Leave out the investigation, option comparisons and
+line numbers; whoever picks the issue up will look those up against the code as
+it is then.
 
 Always inspect the team's existing labels and apply every label that fits the
 issue. Do not create a new label unless the user explicitly asks for one.
