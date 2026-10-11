@@ -13,7 +13,7 @@
 3. Clone this repository into `~/workspace/dotfiles`
 
    ```bash
-   git clone git@github.com:junheep-dev/dotfiles.git ~/workspace/dotfiles
+   git clone git@github.com:junhee1park/dotfiles.git ~/workspace/dotfiles
    ```
 
 4. Run `./install.sh`
